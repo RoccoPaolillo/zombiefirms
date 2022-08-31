@@ -180,9 +180,43 @@ zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b")
 zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,2]
 # zombiefirm_replace <- paste0("\\b",zombiefirm_replace,"\\b",collapse="|")
 names(zombiefirm_replace_de) <- zombiefirm_pattern_de
-txde$text <- str_replace_all(txde$text,regex(zombiefirm_replace_de,ignore_case = T))
+txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_de,ignore_case = T))
 
-corpus_df <- corpus(txde)
+corpus_df <- corpus(txdf)
+
+rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt","spiegel","f.a.z.","f.a.z",
+            "faz","f.az","f a z","fa.z","1","2","3","4","5","6","7","welt","darf","schließlich", "000",
+            "immer", "unternehmen","firmen","trotzdem" , "nämlich" ,  "nennt","zweiten","besser","frankfurt-hahn",
+            "immerhin",
+            "schwer","rund","wegen","denen","sz","WELT AM SONNTAG",
+            "leben_erhalten_schrieb_michael_hüther_direktor","deutschland","später",
+            "dass","zahl","prozent","viele","mehr","schon","sei","gibt","sagt","sagte","dabei","menschen","seien","diesmal",
+            "sitzen","darin","geht","seit","sogar","tun","gewaltigen_anzahl_sogenannter_zombieunternehmen_führen_angesichts",
+            "komme", "kommst", "kommt", "kommen",
+            "muss","musst","muss","müssen","müsst","Warum",
+            "soll","sollst","sollt","sollen", "sollt", "sollen",
+            "laut","jahr","ende","etwa","etwas","moglich", "allerdings","uhr","ezb","ab",
+            "kann","kannst","kann", "können", "könnt", "könnte","könnten","könne","fast",
+            "gut", "zudem", "eigentlich" , "weitere", "bisher", "weniger","iw","gar","hoch",
+            "allerdings",  "möglich","dafür", "wäre" ,"gerade" ,"jahren", "ja", "bereits", "derzeit","blick", "rheinland-pfalz",
+            "anteil","daher","viertagewoche","sagen","sagt","anfang","gehen","gab","gab es","hochbahn","benex","tepco", "zugbegleiter",
+            "bahn",
+            "millionen_unternehmen_entspricht","passiert","lange","erst","macht","wären","hälfte",
+            "quelle"
+)
+
+
+compound_de <- c("europäische union","zombie firma","zombie unternehmen","zombie firmen",
+                 "deutschen banken", "jens ehrhardt",	
+                 "carsten dierig","paschal donohoe",	
+                 "lucas flöther","alexander herzog","flüchtlingswelle 2015","millionen kurzarbeiter",
+                 "ifo geschäftsklimaindex","insolvenzen abgewendet","jörg hofmann","mark schieritz",
+                 "stefan bratzel",	"isabel schnabel","jan roth","corona hilfen",		
+                 "paul ziemiak","insolvenz tsunami","euro gruppe", "euro zone","billige geld", 	
+                 "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe")
+
+
+
 
 
 
@@ -205,9 +239,6 @@ corpus_df <- corpus(txde)
 ## check doubles and useless
 # 
 dfm_sim <- dfm(tokens(corpus_de08))
-# dfm_sim <- dfm_subset(dfm_sim, origin2 == "FAZ")
-dfm_it20 <- dfm(tokens(corpus_subset(corpus_it08,datet >= "2020-01-01")))
-corpusit20 <- corpus_subset(corpus_it08,datet >= "2020-01-01")
 
 sim <- textstat_simil(dfm_sim,
                          method="jaccard",margin="documents", min_simil = 0.70)
@@ -215,47 +246,22 @@ sim <- textstat_simil(dfm_sim,
 # take off diagonal: same item compared to itself
 simlist <- as.list(sim,diag=FALSE)
 
-a <- textstat_simil(dfm_sim, dfm_sim["SZ_SDDZ000020170714ed7e0001x",], margin = "documents", method = "jaccard")
+a <- textstat_simil(dfm_sim, dfm_sim["xxx",], margin = "documents", method = "jaccard")
 
-## correspondence analysis ####
-# dfm_it08 <- dfm(tokens(corpus_it08))
-
+# correspondence analysis one-dimensional
 ca <- textmodel_ca(dfm_sim)
-
-# one dimension
 tca <- textplot_scale1d(ca, margin = "documents",  groups = docvars(corpus_de08, "origin2"))
 plotly::ggplotly(tca)
-#ggsave(paste0("ca_scale1","_",store_df,".jpg"),path = store_df)
-
-# two dimensions, dataframe and plot
-
-dat_ca <- data.frame(nm = ca$rownames,
-                     dim1 = coef(ca, doc_dim = 1)$coef_document, 
-                     dim2 = coef(ca, doc_dim = 2)$coef_document,
-                     origin2 = corpus_it08$origin2,
-                     rating = corpus_it08$rating)
-
-ggplot(dat_ca, aes(x = dim1,y=dim2, color = rating)) + geom_point() +  
-  geom_text(label = dat_ca$nm, hjust=0.5, vjust=0,show.legend = FALSE) +
-  labs(x = "",y="")+
-  ggtitle(dfm_it08$country) +
-  scale_color_manual(values = c("left" = "red","right" = "blue","center" = "green")) +
-  guides(color=guide_legend(title="Source")) + theme_bw() + 
-  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5)) 
-
 
 ## length
-corpus_de08$ntok <- ntoken(corpus_de08)
-txde <- quanteda::convert(corpus_de08,to = "data.frame")
+corpus_df$ntok <- ntoken(corpus_df)
+txdf <- quanteda::convert(corpus_df,to = "data.frame")
 
 is_outlier <- function(x) {
   return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
 }
 
-
-
-
-txde %>% group_by(origin2) %>% mutate(outlier = if_else(is_outlier(ntok), doc_id, NA_character_)) %>% 
+txdf %>% group_by(origin2) %>% mutate(outlier = if_else(is_outlier(ntok), doc_id, NA_character_)) %>% 
   ggplot(aes(x = origin2, y = ntok, color = origin2))  + geom_boxplot() + # geom_point() +
   geom_text_repel(aes(label = outlier), na.rm = TRUE) +
   stat_summary(fun=mean, geom="point",shape = 20,color="red") +
@@ -267,15 +273,12 @@ txde %>% group_by(origin2) %>% mutate(outlier = if_else(is_outlier(ntok), doc_id
 
 # length total corpus
 
-
-t <- txde %>% mutate(outlier = if_else(is_outlier(ntok), doc_id, NA_character_)) %>% 
+t <- txdf %>% mutate(outlier = if_else(is_outlier(ntok), doc_id, NA_character_)) %>% 
   ggplot(aes( y = ntok))  + geom_boxplot() + 
-  #  geom_text(aes(label = outlier), na.rm = TRUE) +
   ylab("Number Tokens") +
   ggtitle("Italy") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5))
-# ggsave(paste0("IT_","boxpplot length documents.jpg"), width = 12, height = 12)
 
 plotly::ggplotly(t)
 
@@ -358,36 +361,6 @@ compound_it <- c( "aziende zombie","imprese zombie","zombie company","società z
                         "sistema economico","sistemi economici","sistema politico","sistemi politici")
 
 
-rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt","spiegel","f.a.z.","f.a.z",
-  "faz","f.az","f a z","fa.z","1","2","3","4","5","6","7","welt","darf","schließlich", "000",
-  "immer", "unternehmen","firmen","trotzdem" , "nämlich" ,  "nennt","zweiten","besser","frankfurt-hahn",
-  "immerhin",
-  "schwer","rund","wegen","denen","sz","WELT AM SONNTAG",
-  "leben_erhalten_schrieb_michael_hüther_direktor","deutschland","später",
-  "dass","zahl","prozent","viele","mehr","schon","sei","gibt","sagt","sagte","dabei","menschen","seien","diesmal",
-  "sitzen","darin","geht","seit","sogar","tun","gewaltigen_anzahl_sogenannter_zombieunternehmen_führen_angesichts",
-  "komme", "kommst", "kommt", "kommen",
-  "muss","musst","muss","müssen","müsst","Warum",
-  "soll","sollst","sollt","sollen", "sollt", "sollen",
-  "laut","jahr","ende","etwa","etwas","moglich", "allerdings","uhr","ezb","ab",
-  "kann","kannst","kann", "können", "könnt", "könnte","könnten","könne","fast",
-  "gut", "zudem", "eigentlich" , "weitere", "bisher", "weniger","iw","gar","hoch",
-  "allerdings",  "möglich","dafür", "wäre" ,"gerade" ,"jahren", "ja", "bereits", "derzeit","blick", "rheinland-pfalz",
-  "anteil","daher","viertagewoche","sagen","sagt","anfang","gehen","gab","gab es","hochbahn","benex","tepco", "zugbegleiter",
-  "bahn",
-  "millionen_unternehmen_entspricht","passiert","lange","erst","macht","wären","hälfte",
-  "quelle"
-)
-
-
-compound_de <- c("europäische union","zombie firma","zombie unternehmen","zombie firmen",
-                        "deutschen banken", "jens ehrhardt",	
-                        "carsten dierig","paschal donohoe",	
-                        "lucas flöther","alexander herzog","flüchtlingswelle 2015","millionen kurzarbeiter",
-                        "ifo geschäftsklimaindex","insolvenzen abgewendet","jörg hofmann","mark schieritz",
-                        "stefan bratzel",	"isabel schnabel","jan roth","corona hilfen",		
-                        "paul ziemiak","insolvenz tsunami","euro gruppe", "euro zone","billige geld", 	
-                        "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe")
 
 
 
