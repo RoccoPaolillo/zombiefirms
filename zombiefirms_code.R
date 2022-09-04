@@ -25,7 +25,7 @@ library(gdata)
 library(readtext)
 library(diffobj)
 
-setwd("")
+setwd("C:/Users/rocpa/OneDrive/Desktop/CNT/zombie_firms/I_review/")
 
 # Background code (cleaning etc.), not needed for analysis reproduction. Corpora are already prepared ####
 
@@ -129,13 +129,17 @@ corpus_it08 <-  corpus_subset(corpus_it08,origin2 == "La Repubblica"|origin2 == 
 
 # clean out texts (outliers, out of context etc., commented)
 corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c( 
-  "GN_GIONLE0020130426e94q00082","CS_CORDES0020171218edci0000g",  # double similar
-  "CS_CORVEN0020210313eh3d00002","RP_REPONL0020191104efb4000ma","RP_REPONL0020211024ehao0028w",  # outliers length
-  "CS_CORVEN0020210209eh290000k",
+  # double similar
+   "GN_GIONLE0020130426e94q00082","CS_CORDES0020171218edci0000g",  
+   # outliers length
+  "CS_CORVEN0020210313eh3d00002","RP_REPONL0020191104efb4000ma","RP_REPONL0020211024ehao0028w", 
+  "CS_CORVEN0020210209eh290000k", "RP_LAREP00020200720eg7k0003c",
   # out of context
-  "CS_CORDES0020141219eacj00063", # pointless (actor Gwyne Paltrow)
-  "CS_CORONL0020200706eg76000en", # university start-up
-  "FQ_FATONL0020210212eh2c0008w" # about Berlusconi, mention like joke (Berlusconi zombie company)
+  "CS_CORDES0020141219eacj00063", # about actress Gwyne Paltrow
+ # "CS_CORONL0020200706eg76000en", # startup Intesa San Paolo
+  "FQ_FATONL0020210212eh2c0008w", # about Berlusconi, mention like joke (Berlusconi zombie company)
+  "CS_CORDES0020160118ec1i00072", # about enterpreneur Calabrò, just mention
+  "FQ_FATQUO0020150918eb9h0000m" # American federal bank, mention to Europe
 ))
 
 
@@ -280,7 +284,9 @@ rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt"
             #
             "quelle","sollten","heißt","längst","hatte","stellt","hätten","müssten",
             "teil","sicht","sehen","besteht","sewing","dadurch","wohl","wann","hätte",
-            "jedoch","patrik-ludwig","viele_menschen"
+            "jedoch","patrik-ludwig","viele_menschen", 
+            #
+            "demnach","grund","somit","ersten","halbjahr","kommenden", "vergangenen"
 )
 
 # compound terms
@@ -294,6 +300,8 @@ compound_de <- c("europäische union","zombie firma","zombie unternehmen","zombi
                  "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe",
                  #
                  "märz 2020","im griff","in den griff")
+
+bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende jahr","vergangenen jahr"))]
 
 # Document-term matrix
 dfm_df <-  tokens( corpus_df,
@@ -348,8 +356,14 @@ rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","gr
             "presenza", "tanto", "prova","tutte","sorta","fronte","causa","mentre","quando",
             "fino","secondo","novembre","terzo", "mettere", "mesi", "gennaio","altri","intervista",
             "agosto", "spiegato", "presentato","tratta","punto","seguito","caso","deciso", #
-            "modo","quali","quasi"
-            
+            "modo","quali","quasi",
+            #
+            "forse","stesso","certo","po","certo","dichiarato","dire","tema","detto","oggi","particolare",
+            "altre","certo","almeno","infatti","quarto","pure","può_permettersi","considerata","trova",
+            "così", "proviene","stesso_periodo","quest_anno", # "meno_rispetto","così","cosiddette"
+            "buono", "chiuso","numero",
+            #
+            "linea","aprile","mese"
 ) 
 
 compound_it <- c( "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
@@ -372,7 +386,10 @@ compound_it <- c( "aziende zombie","imprese zombie","zombie company","società z
                   "sistema produttivo","sistema economico","sistema bancario","sistema industriale",
                   "fine pandemia","fine della pandemia", "in piedi", "pioggia di soldi","alto rendimento","alto adige",
                   "posto di lavoro","posto lavoro", "crisi economica","crisi finanziaria","crisi del 2008",
-                  "posti di lavoro","presidente del consiglio","a favore")
+                  "posti di lavoro","presidente del consiglio","a favore","piccole e medie imprese","piccole imprese",
+                  "valore aggiunto")
+
+bg <- bg[!(bg %in% c("debito buono"))]
 
 
 dfm_df <-  tokens( corpus_df,
@@ -397,16 +414,13 @@ freq_stat <- textstat_frequency(dfm_df, groups = rating) %>%
 # keyness, repeated for Italy and Germany ####
 
 
-kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+kn_df <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
                  target = "right")
 
-kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
-                          target = "right")
-
-kn_deplot <- textplot_keyness(kn_de, n = 20, margin = 0.1,
+textplot_keyness(kn_df, n = 20, margin = 0.1,
                  labelsize = 8, color = c("black","grey")) + 
 # ggtitle("Italy") +
-  ylab("Germany") +
+  ylab(unique(dfm_df$country)) +
   xlab(expression(chi^2)) +
  theme_bw() +
   theme( axis.title.y = element_text(size = 20),
@@ -415,8 +429,9 @@ kn_deplot <- textplot_keyness(kn_de, n = 20, margin = 0.1,
     plot.title = element_text(hjust = 0.5),legend.position = "bottom",
         legend.text = element_text(size=20))
 
-kntot <- ggpubr::ggarrange(kn_deplot,kn_itplot,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(kn_deplot,file="images/kn_deplot.jpg", width = 16, height = 14)
+ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
+# kntot <- ggpubr::ggarrange(kn_deplot,kn_itplot,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+
 
 
 # tk_df (co-occurrence) ITA ####
@@ -435,9 +450,10 @@ fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
 co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE)
 E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
 co_occur_network_lf <- simplify(co_occur_network_lf)
+co_occur_network_lf$ref <- "Italy Left"
 # tkplot for interactive networks (don't close while working on the code!)
-tk_lf <- tkplot(co_occur_network_lf)
-l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+# tk_lf <- tkplot(co_occur_network_lf)
+# l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
 
 # Sane procedure for Germany right
 fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
@@ -451,10 +467,12 @@ fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
 co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
 E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
 co_occur_network_rt <- simplify(co_occur_network_rt)
-tk_rt <- tkplot(co_occur_network_rt)
-l_rt <- tkplot.getcoords(tk_rt)
+co_occur_network_rt$ref <- "Italy Right"
+# tk_rt <- tkplot(co_occur_network_rt)
+# l_rt <- tkplot.getcoords(tk_rt)
 
 # tk_df (co-occurrence) DEU ####
+# left co-occurrence matrix
 fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
@@ -466,9 +484,10 @@ fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
 co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE)
 E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
 co_occur_network_lf <- simplify(co_occur_network_lf)
-tk_lf <- tkplot(co_occur_network_lf)
-l_lf <- tkplot.getcoords(tk_lf)
+co_occur_network_lf$ref <- "Germany Left"
 
+
+# right co-occurrence matrix
 fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
@@ -480,19 +499,20 @@ fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
 co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
 E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
 co_occur_network_rt <- simplify(co_occur_network_rt)
-# tkplot for interactive network to manipulate. An interactive window will open to work with
-# Leave the window open until end of plotting final figures.
-tk_rt <- tkplot(co_occur_network_rt) 
-# to take layout from tkplot geo coordinate 
-l_rt <- tkplot.getcoords(tk_rt)
+co_occur_network_rt$ref <- "Germany Right"
+
+
+
 
 
 # CO-occurrences ####
+# tkplot for interactive network to manipulate. An interactive window will open to work with
+# Leave the window open until end of plotting final figures.
 
+# left-wing co-occurrences
+tk_lf <- tkplot(co_occur_network_lf)
+l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
 
-png("images/IT_co-occ.png")
-
- # left co-occurrences
  par(mar = c(0, 0,1.3 , 0)) 
 plot(co_occur_network_lf,
      layout = l_lf,
@@ -509,8 +529,13 @@ plot(co_occur_network_lf,
      vertex.label.dist = 1.8
     
 )
-title("Germany Left",cex.main=2)
+title(co_occur_network_lf$ref,cex.main=2)
 
+
+# right-wing co-occurrences
+
+tk_rt <- tkplot(co_occur_network_rt) 
+l_rt <- tkplot.getcoords(tk_rt)
 plot(co_occur_network_rt,
      layout = l_rt,
      # main = "Italy Right",
@@ -525,7 +550,7 @@ plot(co_occur_network_rt,
      vertex.label.font = ifelse(V(co_occur_network_rt)$name == "zombiefirms",2,1),
      vertex.label.dist = 1
 )
-title("Germany Right",cex.main=2)
+title(co_occur_network_rt$ref,cex.main=2)
 
 
 # occurrences to specific term, repeated for each document-term-matrix ####
@@ -578,7 +603,7 @@ calculateCoocStatistics <- function(coocTerm, binDTM, measure = "DICE"){
   return(sig)
 }
 
-numberOfCoocs <- 15
+numberOfCoocs <- 12
 
 dfm_dfcooc <- dfm_subset(dfm_df, datet >= "2020-01-01" & rating == "right")  # subcorpus
 
@@ -628,8 +653,8 @@ for (i in 1:numberOfCoocs){
   tmpGraph <- data.frame(from = character(), to = character(), sig = numeric(0))
   tmpGraph[1:numberOfCoocs, 3] <- coocs2[1:numberOfCoocs]
   tmpGraph[, 1] <- newCoocTerm
-  tmpGraph[, 2] <- names(coocs2)[1:numberOfCoocs]
-  tmpGraph[, 3] <- coocs2[1:numberOfCoocs]
+  tmpGraph[, 2] <- names(coocs2)[1:numberOfCoocs] # !!
+  tmpGraph[, 3] <- coocs2[1:numberOfCoocs] # !!
 
   #Append the result to the result graph
   resultGraph <- rbind(resultGraph, tmpGraph[2:length(tmpGraph[, 1]), ])
@@ -644,10 +669,10 @@ graphNetwork <- delete.vertices(graphNetwork, graphVs)
 
 V(graphNetwork)$color <- ifelse(V(graphNetwork)$name == coocTerm, 'cornflowerblue', 'orange')
 
-# Edges with a significance of at least 50% of the maximum sig- nificance in the graph are drawn in orange
-halfMaxSig <- max(E(graphNetwork)$sig) * 0.5
+## Edges with a significance of at least 50% of the maximum sig- nificance in the graph are drawn in orange
+# halfMaxSig <- max(E(graphNetwork)$sig) * 0.5
 # E(graphNetwork)$color <- ifelse(E(graphNetwork)$sig > halfMaxSig, "coral", "azure3")
-E(graphNetwork)$width <- ifelse(E(graphNetwork)$sig > halfMaxSig, 4, 1)
+# E(graphNetwork)$width <- ifelse(E(graphNetwork)$sig > halfMaxSig, 4, 1)
 
 
 
@@ -660,15 +685,16 @@ V(graphNetwork)$size <- log(degree(graphNetwork)) * 5
 rem_dekey <- read.xls("zombiefirms.xls",sheet = "rem_dekey")[,1]
 rem_itkey <- read.xls("zombiefirms.xls",sheet = "rem_itkey")[,1]
 connected_key <- resultGraph %>% filter(from == coocTerm )
-connected_key2 <- resultGraph %>% filter(duplicated(resultGraph$to))
-connected_key <- rbind(connected_key, connected_key2)
+# connected_key2 <- resultGraph %>% filter(duplicated(resultGraph$to))
+# connected_key <- rbind(connected_key, connected_key2)
+# 
+# keep_it <- read.xls("zombiefirms.xls",sheet = "rem_itkey")[,2]
+# keep_it <- c(keep_it,unique(connected_key),coocTerm)
 
-keep_it <- read.xls("zombiefirms.xls",sheet = "rem_itkey")[,2]
-keep_it <- c(keep_it,unique(connected_key),coocTerm)
 
-
-  
+set.seed(124)
 tk_kc <- tkplot(graphNetwork)
+
 tk_kc_l <- tkplot.getcoords(tk_kc)
 
 par(mar = c(0,0,1,0))
@@ -678,7 +704,7 @@ plot(graphNetwork,
     # main = paste(unique(dfm_dfcooc$country),",", unique(dfm_dfcooc$rating),",", unique(dfm_dfcooc$covidtp),":", coocTerm ),
      vertex.label.family = "sans",
      vertex.label.cex = ifelse(V(graphNetwork)$name == coocTerm, 1.5, 1.4),
-     vertex.shape = ifelse(V(graphNetwork)$name == coocTerm, 'square', ifelse(V(graphNetwork)$name %in% connected_key, 'square', 'circle') ),
+     vertex.shape = ifelse(V(graphNetwork)$name == coocTerm, 'square', ifelse(V(graphNetwork)$name %in% connected_key$to, 'square', 'circle') ),
      vertex.label.dist = 0,           # Labels of the nodes moved slightly
      vertex.frame.color = 'darkolivegreen',
      vertex.label.color = 'black',      # Color of node names
@@ -691,15 +717,17 @@ plot(graphNetwork,
  # vertex.label =  ifelse(V(graphNetwork)$name %in% connected_key, V(graphNetwork)$name,
  #                        ifelse(V(graphNetwork)$name %in% rem_itkey," " ,V(graphNetwork)$name )), # remedy names  remkey
 # vertex.label =  ifelse(V(graphNetwork)$name %in% keep_it, V(graphNetwork)$name," "), # remedy names  remkey
- 
+
+# vertex.label = ifelse(V(graphNetwork)$name %in% rem_itkey," ",V(graphNetwork)$name ),
  
  #  vertex.label =  V(graphNetwork)$name,
     # vertex.label.cex = 1, # font size of node names
-     edge.width = ifelse(E(graphNetwork)$sig > halfMaxSig, 4, 1),
+  #   edge.width = ifelse(E(graphNetwork)$sig > halfMaxSig, 4, 1),
+edge.width = E(graphNetwork)$sig,
+
      vertex.color = "grey"
 )
-title("Italy Right",cex.main=1.5)
-# dev.off()
+title(paste0(unique(dfm_dfcooc$country)," ",unique(dfm_dfcooc$rating)),cex.main=1.5)
 
 
 
