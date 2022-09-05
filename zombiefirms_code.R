@@ -436,7 +436,7 @@ ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, he
 
 # tk_df (co-occurrence) ITA ####
 
-# co-occurrences feature matrix Germany left
+# co-occurrences feature matrix Italy left
 
 fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
                 remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
@@ -455,7 +455,7 @@ co_occur_network_lf$ref <- "Italy Left"
 # tk_lf <- tkplot(co_occur_network_lf)
 # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
 
-# Sane procedure for Germany right
+# Sane procedure for Italy right
 fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
@@ -603,13 +603,13 @@ calculateCoocStatistics <- function(coocTerm, binDTM, measure = "DICE"){
   return(sig)
 }
 
-numberOfCoocs <- 12
+numberOfCoocs <- 11
 
-dfm_dfcooc <- dfm_subset(dfm_df, datet >= "2020-01-01" & rating == "right")  # subcorpus
+dfm_dfcooc <- dfm_subset(dfm_df, datet >= "2020-01-01" & rating == "left")  # subcorpus
 
 coocCounts <- t(dfm_dfcooc) %*% dfm_dfcooc
 
-coocTerm <- "aziende_zombie"            # term to search
+coocTerm <- "imprese_zombie"            # term to search
 
 k <- nrow(dfm_dfcooc)
 ki <- sum(dfm_dfcooc[, coocTerm])
@@ -696,14 +696,13 @@ set.seed(124)
 tk_kc <- tkplot(graphNetwork)
 
 tk_kc_l <- tkplot.getcoords(tk_kc)
-
 par(mar = c(0,0,1,0))
 plot(graphNetwork,
       layout = tk_kc_l,
      #  layout = layout.fruchterman.reingold,  # Force Directed Layout
     # main = paste(unique(dfm_dfcooc$country),",", unique(dfm_dfcooc$rating),",", unique(dfm_dfcooc$covidtp),":", coocTerm ),
      vertex.label.family = "sans",
-     vertex.label.cex = ifelse(V(graphNetwork)$name == coocTerm, 1.5, 1.4),
+     vertex.label.cex = ifelse(V(graphNetwork)$name == coocTerm, 1.3, 1),
      vertex.shape = ifelse(V(graphNetwork)$name == coocTerm, 'square', ifelse(V(graphNetwork)$name %in% connected_key$to, 'square', 'circle') ),
      vertex.label.dist = 0,           # Labels of the nodes moved slightly
      vertex.frame.color = 'darkolivegreen',
