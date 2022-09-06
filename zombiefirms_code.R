@@ -232,7 +232,7 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
 
 # clean corpus ####
 
-corpus_df <- corpus_it08
+corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
 
 corpus_df <- tolower(corpus_df)
 corpus_df <- gsub("'", " ",  corpus_df)
@@ -413,24 +413,33 @@ freq_stat <- textstat_frequency(dfm_df, groups = rating) %>%
 
 # keyness, repeated for Italy and Germany ####
 
-
-kn_df <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+# here two different corpora where run for Italian and German corpus in order to combine for visualization
+kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
                  target = "right")
+kn_it$country <-  "Italy"
 
-textplot_keyness(kn_df, n = 20, margin = 0.1,
-                 labelsize = 8, color = c("black","grey")) + 
-# ggtitle("Italy") +
-  ylab(unique(dfm_df$country)) +
+kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+                          target = "right")
+kn_de$country <- "Germany"
+
+kn_tot <- rbind(kn_it,kn_de)
+
+pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
+                 labelsize = 8, color = c("black","grey")) +
+  ylab(kn_de$country) +
   xlab(expression(chi^2)) +
- theme_bw() +
+ theme_bw()  +
   theme( axis.title.y = element_text(size = 20),
     axis.text.y = element_blank(),axis.ticks.y = element_blank(),
-    axis.title.x = element_text(size = 20),
+    axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
     plot.title = element_text(hjust = 0.5),legend.position = "bottom",
         legend.text = element_text(size=20))
 
-ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
-# kntot <- ggpubr::ggarrange(kn_deplot,kn_itplot,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+ggsave(filename = "images/kntot.jpg", width = 17, height = 25)
+
+# ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
+
 
 
 
