@@ -232,7 +232,8 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
 
 # clean corpus ####
 
-corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+# corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
 
 corpus_df <- tolower(corpus_df)
 corpus_df <- gsub("'", " ",  corpus_df)
@@ -443,7 +444,7 @@ ggsave(filename = "images/kntot.jpg", width = 17, height = 25)
 
 
 
-# tk_df (co-occurrence) ITA ####
+# tk_df (co-occurrence) ITA, to be used in Co-occurrences section ####
 
 # co-occurrences feature matrix Italy left
 
@@ -454,10 +455,15 @@ fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left
   tokens_compound(phrase(c(compound_it,bg))) %>%
   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
   fcm(context = "window", window = 20) 
+
 fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
 # co-occurrence plot left
-co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE)
+co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE ) # , weighted = T
 E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+
+E(co_occur_network_lf)$weight <- 1
+co_occur_network_lf <- simplify(co_occur_network_lf, edge.attr.comb=list(weight="sum"))
+
 co_occur_network_lf <- simplify(co_occur_network_lf)
 co_occur_network_lf$ref <- "Italy Left"
 # tkplot for interactive networks (don't close while working on the code!)
@@ -472,23 +478,26 @@ fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "righ
   tokens_compound(phrase(c(compound_it,bg))) %>%
   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
   fcm(context = "window", window = 20) 
+
 fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
 co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
 E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
+
 co_occur_network_rt <- simplify(co_occur_network_rt)
 co_occur_network_rt$ref <- "Italy Right"
 # tk_rt <- tkplot(co_occur_network_rt)
 # l_rt <- tkplot.getcoords(tk_rt)
 
-# tk_df (co-occurrence) DEU ####
+# tk_df (co-occurrence) DEU, to be used in Co-occurrences section  ####
 # left co-occurrence matrix
 fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_de,bg))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>%
+  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de))%>%
   fcm(context = "window", window = 20) 
+
 fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
 co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE)
 E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
@@ -506,11 +515,36 @@ fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "righ
   fcm(context = "window", window = 20) 
 fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
 co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
-E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
+# E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
 co_occur_network_rt <- simplify(co_occur_network_rt)
 co_occur_network_rt$ref <- "Germany Right"
 
 
+# newtest
+
+# df_rt <- dfm_subset(dfm_df,datet >= "2020-01-01" & rating == "right")
+# tp_df_rt <- names(topfeatures(df_rt, 20))
+# df_lf <- dfm_subset(dfm_df,datet >= "2020-01-01" & rating == "left")
+# tp_df_lf <- names(topfeatures(df_lf, 20))
+# topgat_fcm <- fcm_select(fcm_rt, pattern = tp_df_rt)
+# 
+# 
+# fcm_rt <- fcm(df_rt,context = "window", window = 20) 
+# fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
+# 
+# co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = tp_df_rt), mode = "undirected", diag = FALSE)
+# E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
+# co_occur_network_rt <- simplify(co_occur_network_rt)
+# co_occur_network_rt$ref <- "Germany Right"
+# 
+# fcm_lf <- fcm(df_lf,context = "window", window = 20) 
+# fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
+# 
+# 
+# co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = tp_df_lf), mode = "undirected", diag = FALSE)
+# E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_lf$ref <- "Germany Left"
 
 
 
@@ -525,14 +559,15 @@ l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate
  par(mar = c(0, 0,1.3 , 0)) 
 plot(co_occur_network_lf,
      layout = l_lf,
-      vertex.size = eigen_centrality(co_occur_network_lf)$vector * 15,
+        vertex.size = strength(co_occur_network_lf),
      vertex.shape = "circle",
-     vertex.label = V(co_occur_network_lf)$name,
+     vertex.label =  paste0(V(co_occur_network_lf)$name, strength(co_occur_network_lf) ),
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "grey",
-     edge.width = (E(co_occur_network_lf)$weight / 4),
-    
+   #  edge.width = (E(co_occur_network_lf)$weight / 4),
+   edge.width = E(co_occur_network_lf)$weight,
+   edge.label =  E(co_occur_network_lf)$weight,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_lf)$name == "zombiefirms",2,1),
      vertex.label.dist = 1.8
@@ -554,7 +589,7 @@ plot(co_occur_network_rt,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "grey",
-     edge.width = (E(co_occur_network_rt)$weight / 4),
+   edge.width = (E(co_occur_network_rt)$weight / 4),
     
      vertex.label.font = ifelse(V(co_occur_network_rt)$name == "zombiefirms",2,1),
      vertex.label.dist = 1
