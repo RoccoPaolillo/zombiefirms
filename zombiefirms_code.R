@@ -32,10 +32,19 @@ setwd("C:/Users/rocpa/OneDrive/Desktop/CNT/zombie_firms/I_review/")
 ## to find regex (root words/combinations) of "zombie firms" terms
 
 df_word <- unique(stringr::str_extract_all(txdf$text,
-        regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*sistema \\-?[:alnum:]*\\-?[:alnum:]*",
+        regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* kleine \\-?[:alnum:]*\\-?[:alnum:]* \\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*",
                                                  ignore_case = TRUE)))
 
 unique(unlist(df_word))
+
+checksen <- txdf %>% filter(str_detect(text,"pflicht"))
+
+de_res <- unique(read.xls("zombiefirms.xls",sheet = "de_result2")[,1])
+de_res <- paste0("\\b",de_res,"\\b",collapse="|")
+
+
+
+
 
 ## check doubles and out of context texts
 # 
@@ -130,19 +139,18 @@ corpus_it08 <-  corpus_subset(corpus_it08,origin2 == "La Repubblica"|origin2 == 
 # clean out texts (outliers, out of context etc., commented)
 corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c( 
   # double similar
-   "GN_GIONLE0020130426e94q00082","CS_CORDES0020171218edci0000g",  
+   "GN_GIONLE0020130426e94q00082","CS_CORDES0020171218edci0000g","CS_CORSUP0020200706eg760000o", 
+   "CS_CORDES0020210201eh210007q",
    # outliers length
   "CS_CORVEN0020210313eh3d00002","RP_REPONL0020191104efb4000ma","RP_REPONL0020211024ehao0028w", 
   "CS_CORVEN0020210209eh290000k", "RP_LAREP00020200720eg7k0003c",
   # out of context
   "CS_CORDES0020141219eacj00063", # about actress Gwyne Paltrow
- # "CS_CORONL0020200706eg76000en", # startup Intesa San Paolo
   "FQ_FATONL0020210212eh2c0008w", # about Berlusconi, mention like joke (Berlusconi zombie company)
   "CS_CORDES0020160118ec1i00072", # about enterpreneur Calabrò, just mention
-  "FQ_FATQUO0020150918eb9h0000m" # American federal bank, mention to Europe
+  "FQ_FATQUO0020150918eb9h0000m" # American federal bank, mention to Europe,
+  # "CS_CORONL0020200706eg76000en", # startup Intesa San Paolo TO GET IT OUT!
 ))
-
-
 
 
 # GERMANY PROCESSING ####
@@ -207,7 +215,7 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
  # #outliers length,
   "ZT_DIEZEI0020201119egbj0000m","WT_WSONNT0020140921ea9l0004y","ZT_DIEZEI0020210805eh850000v",
   "WT_WELTON0020200712eg7c0005l","WT_WELTON0020200427eg4q00005" ,
- "FZ_FD1202007116039759","FZ_SD1202101316179362",
+ "FZ_FD1202007116039759","FZ_SD1202101316179362","WT_WSONNT0020200816eg8g0001g",
  # meaningless
  "WT_WELTON0020201228egcs000bz" , # meaningless DAX
  "SZ_SDDZ000020170714ed7e0001x" , # menaingless music
@@ -232,8 +240,11 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
 
 # clean corpus ####
 
-corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+ corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
 # corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+
+# corpus_df <- corpus_reshape(corpus_df, to = "sentences")
+# corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
 
 corpus_df <- tolower(corpus_df)
 corpus_df <- gsub("'", " ",  corpus_df)
@@ -251,61 +262,126 @@ corpus_df <- gsub("\\s+", " ", corpus_df)
 # other file: corpus converted to corpus
 txdf <- convert(corpus_df, to = "data.frame")
 
+
+
+
 # lemmatization and back Germany (mainly zombiefirms) #### 
 # same for Italian corpus)
 
 zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,1] # no lemmatized terms 
 zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
-zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,2] # lemmatized version
+zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,3] # lemmatized version #1
 names(zombiefirm_replace_de) <- zombiefirm_pattern_de
 txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_de,ignore_case = T))
 
 corpus_df <- corpus(txdf)
+
+
+# de keyterm zombie
+
+zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "de_lemma")[,5]) # 1
+zombieterms <-  zombieterms[zombieterms != ""]
+zombieterms <- c(zombieterms,"zombie")
+zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
+
+tx_sen<- txdf %>% filter(str_detect(text,zombieterms))
+
+tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
+
+corpus_sen <- corpus(tx_sen)
+
+# 
+
+# compound terms
+compound_de <- c("europäische union","european zentral bank",
+                 # "zombie firma","zombie unternehmen","zombie firmen",
+                 "deutschen banken", "jens ehrhardt",
+                 "carsten dierig","paschal donohoe",
+                 "lucas flöther","alexander herzog","flüchtlingswelle 2015",# "millionen kurzarbeiter",
+                 "ifo geschäftsklimaindex","insolvenzen abgewendet","jörg hofmann","mark schieritz",
+                 "stefan bratzel",	"isabel schnabel","jan roth","corona hilfen",
+                 "paul ziemiak","insolvenz tsunami","euro gruppe", "euro zone","billige geld",
+                 "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe",
+                 #
+                 "märz 2020","im griff","in den griff","große koalition","große entrup",
+                 #SEN
+                 "nicht überlebensfähig","finanziellen risiko","swiss re","entstehung von zombiefirms",
+                 "in höhe von" ,
+                 "european zentral bank",  "european zentral bank-präsident"    ,       
+                 "european zentral bank-präsidenten", "european zentral bank-präsidentin"        , 
+                "european zentral bank-geldpolitik" , "european zentral bank-politik"             ,
+                 "european zentral bank-zinspolitik" , "european zentral bank-chefbankenaufseher" , 
+                 "european zentral bank-rat" , "european zentral bank-direktorin"          ,
+                  "european zentral bank-veranstaltung" ,                  
+                "european zentral bank-vizepräsident" ,"european zentral bank-präsidentschaft"   ,  
+                "european zentral bank-direktoriumsmitglied","european zentral bank-ökonomen"    ,        
+                  "european zentral bank-chefökonom" ,"european zentral bank-maßnahmen"         ,  
+               "european zentral bank-chef"   , "european zentral bank-rates"               ,
+                  "european zentral bank-geldschwemme" ,"european zentral bank-stresstests"     ,    
+                  "european zentral bank-direktor"  , "european zentral bank-bankenaufsicht",
+               "finanzielle risiko"
+                 #
+                 # "römermann fachanwalt"
+                 )
+
+bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende jahr","vergangenen jahr",
+                     # SEN
+                     "nicht überlebensfähig seien","überlebensfähig seien","dass firmen","unternehmen geben",
+                     "bundesregierung züchtet","sagt hantzsch","warnungen kurzarbeitergeld mäste",
+                     "millionen unternehmen entspricht", "bundesbank warnt",
+                     #
+                     "gewaltigen anzahl sogenannter zombieunternehmen führen angesichts",
+                     "leben erhalten schrieb michael hüther direktor"
+                     ))]
+
 # terms to remove, from key-center co-occurrences
-rem_dekey <- read.xls("zombiefirms.xls",sheet = "rem_dekey")[,1]
+# rem_dekey <- read.xls("zombiefirms.xls",sheet = "rem_dekey")[,1]
 #terms to remove
 rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt","spiegel","f.a.z.","f.a.z",
-            "faz","f.az","f a z","fa.z","1","2","3","4","5","6","7","welt","darf","schließlich", "000",
-            "immer", "unternehmen","firmen","trotzdem" , "nämlich" ,  "nennt","zweiten","besser","frankfurt-hahn",
+            "faz","f.az","f a z","fa.z","welt","darf","schließlich",
+            "immer", "unternehmen","firmen","trotzdem" , "nämlich" ,  "nennt","zweiten","besser",
             "immerhin",
             "schwer","rund","wegen","denen","sz","WELT AM SONNTAG",
-            "leben_erhalten_schrieb_michael_hüther_direktor","deutschland","später",
+            "später",
             "dass","zahl","prozent","viele","mehr","schon","sei","gibt","sagt","sagte","dabei","menschen","seien","diesmal",
-            "sitzen","darin","geht","seit","sogar","tun","gewaltigen_anzahl_sogenannter_zombieunternehmen_führen_angesichts",
+            "sitzen","darin","geht","seit","sogar","tun",
             "komme", "kommst", "kommt", "kommen",
             "muss","musst","muss","müssen","müsst","warum",
             "soll","sollst","sollt","sollen", "sollt", "sollen",
             "laut","jahr","ende","etwa","etwas","moglich", "allerdings","uhr","ezb","ab",
             "kann","kannst","kann", "können", "könnt", "könnte","könnten","könne","fast",
             "gut", "zudem", "eigentlich" , "weitere", "bisher", "weniger","iw","gar","hoch",
-            "allerdings",  "möglich","dafür", "wäre" ,"gerade" ,"jahren", "ja", "bereits", "derzeit","blick", "rheinland-pfalz",
-            "anteil","daher","viertagewoche","sagen","sagt","anfang","gehen","gab","gab es","hochbahn","benex","tepco", "zugbegleiter",
-            "bahn",
-            "millionen_unternehmen_entspricht","passiert","lange","erst","macht","wären","hälfte",
+            "allerdings",  "möglich","dafür", "wäre" ,"gerade" ,"jahren", "ja", "bereits", "derzeit","blick", # "rheinland-pfalz",
+            "anteil","daher","viertagewoche","sagen","sagt","anfang","gehen","gab","gab es","hochbahn","benex","tepco", # "zugbegleiter",
+            "passiert","lange","erst","macht","wären","hälfte","rede",
             #
             "quelle","sollten","heißt","längst","hatte","stellt","hätten","müssten",
             "teil","sicht","sehen","besteht","sewing","dadurch","wohl","wann","hätte",
-            "jedoch","patrik-ludwig","viele_menschen", 
+            "jedoch","patrik-ludwig","viele_menschen",
             #
-            "demnach","grund","somit","ersten","halbjahr","kommenden", "vergangenen"
+            "demnach","grund","somit","ersten","halbjahr","kommenden", "vergangenen",
+            "allein","dürften",
+            #
+           "instituts","aufgrund","tatsächlich",
+            "gemäß","gebe","halle","begriff","fall","vorjahr","zumindest", #"montag",
+            "haeusgen","kritisiert", "walter-borjans", "hervor",
+            "vielen","tut", #,
+            # CO-occurrence
+            "schnell","frage","beispiel","zeit","in_höhe_von", "folge","folgen",  #,  
+            # SEN 2
+            "zusammenhang","hantzsch","gleich","gleichzeitig","deshalb","sogenannten",
+            "zahlen", "beispiel_volker_römermann_fachanwalt" , "lassen", "analyse", # ,
+           "macht_daher_schon_länger"  ,
+            # SEN
+            "zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma","unternehmenszombies",
+            "zombie_banken", "zombifizierung","zombie","zombiefirms", "entstehung_von_zombiefirms"
 )
 
-# compound terms
-compound_de <- c("europäische union","zombie firma","zombie unternehmen","zombie firmen",
-                 "deutschen banken", "jens ehrhardt",	
-                 "carsten dierig","paschal donohoe",	
-                 "lucas flöther","alexander herzog","flüchtlingswelle 2015","millionen kurzarbeiter",
-                 "ifo geschäftsklimaindex","insolvenzen abgewendet","jörg hofmann","mark schieritz",
-                 "stefan bratzel",	"isabel schnabel","jan roth","corona hilfen",		
-                 "paul ziemiak","insolvenz tsunami","euro gruppe", "euro zone","billige geld", 	
-                 "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe",
-                 #
-                 "märz 2020","im griff","in den griff")
 
-bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende jahr","vergangenen jahr"))]
+
 
 # Document-term matrix
-dfm_df <-  tokens( corpus_df,
+dfm_df <-  tokens( corpus_sen,
                    remove_punct = TRUE,
                    remove_symbols = TRUE,
                    remove_separators = TRUE,
@@ -314,20 +390,13 @@ dfm_df <-  tokens( corpus_df,
 ) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_de,bg))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de, rem_dekey)) %>% 
+  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>% # , rem_dekey)) %>% 
   dfm()
 
 # to check frequency
-zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,2]
+zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,5] #1
 freq_stat <- textstat_frequency(dfm_df,groups = rating) %>% 
   subset(feature %in% c(unique(zombiefirm_replace_de)))
-
-
-
-
-
-
-
 
 
 # lemmatization and back Italy (mainly zombiefirms) #### 
@@ -335,39 +404,30 @@ freq_stat <- textstat_frequency(dfm_df,groups = rating) %>%
 
 zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,1]
 zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b")
-zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,2]
+zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3] #1
 # zombiefirm_replace <- paste0("\\b",zombiefirm_replace,"\\b",collapse="|")
 names(zombiefirm_replace_it) <- zombiefirm_pattern_it
 txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_it,ignore_case = T))
-# txit$text <- stri_replace_all_fixed(txit$text, zombiefirm_pattern,  zombiefirm_replace, vectorize_all=FALSE)
 
 corpus_df <- corpus(txdf)
 
-rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","grandi","meno","tutto","tutti",
-            "c'é","c'e","state","essere","percentuale","imprese","solo","parte","ne","cosa","fare",
-            "c’è","c ’è","c'è","c 'è","d", "avere","milano","torino","bologna","napoli","pisa","quindi",
-            "volta","veneto", "termini","fatto quotidiano","la repubblica","corriere della sera", "il giornale",
-            "il corrier","corriere","il fatto","https*","fatto_quotidiano","fatto_quotidiano","fatto","poi", "mai","prima",
-            "cento","gran_parte","gran* parte", #
-            "anni","soltanto","imprese_intervistate","imprese intervistate","d accordo","d_accordo","circa","però",
-            "proprio","d_italia","allora","fa","ciò","stata","qui","altra","vero","là","dopo","dare",
-            "ottenuto","città","febbraio",
-            "attesa", "mondo", "chiusura","ultima","domanda","invece", "senso", "giorni","passato",
-            "addirittura", "base","chiaro", "poco", "alto","ora","ancora", "considera","posto","luglio",
-            "presenza", "tanto", "prova","tutte","sorta","fronte","causa","mentre","quando",
-            "fino","secondo","novembre","terzo", "mettere", "mesi", "gennaio","altri","intervista",
-            "agosto", "spiegato", "presentato","tratta","punto","seguito","caso","deciso", #
-            "modo","quali","quasi",
-            #
-            "forse","stesso","certo","po","certo","dichiarato","dire","tema","detto","oggi","particolare",
-            "altre","certo","almeno","infatti","quarto","pure","può_permettersi","considerata","trova",
-            "così", "proviene","stesso_periodo","quest_anno", # "meno_rispetto","così","cosiddette"
-            "buono", "chiuso","numero",
-            #
-            "linea","aprile","mese"
-) 
+# it keyterm zombie
+zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,5]) #1
+zombieterms <-  zombieterms[zombieterms != ""]
+zombieterms <- c(zombieterms,"zombie")
+zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
 
-compound_it <- c( "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
+tx_sen <- txdf %>% filter(str_detect(text,zombieterms))
+
+tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
+
+corpus_sen <- corpus(tx_sen)
+
+
+# txit$text <- stri_replace_all_fixed(txit$text, zombiefirm_pattern,  zombiefirm_replace, vectorize_all=FALSE)
+
+
+compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
                   "cassa integrazione","cassa lavoro", "settore terziario", "settore turistico",
                   "unione europea","salva italia","decreto ristori","decreti ristoro",
                   "lotto di vaccini","istituto di credito","instituti di credito",
@@ -385,12 +445,77 @@ compound_it <- c( "aziende zombie","imprese zombie","zombie company","società z
                   "sistema politico","sistema sanitario","sistema democratico","sistema finanziario","sistema imprenditoriale",
                   "sistema educativo","sistema paese","sistema fiscale","sistema produttivo","sistema capitalistico",
                   "sistema produttivo","sistema economico","sistema bancario","sistema industriale",
+                  "sistema creditizio",
                   "fine pandemia","fine della pandemia", "in piedi", "pioggia di soldi","alto rendimento","alto adige",
                   "posto di lavoro","posto lavoro", "crisi economica","crisi finanziaria","crisi del 2008",
                   "posti di lavoro","presidente del consiglio","a favore","piccole e medie imprese","piccole imprese",
-                  "valore aggiunto")
+                  "valore aggiunto", "riproduzione riservata",
+                  # SEN,
+                  "tenute in vita","emergenza sanitaria","flusso di credito","flusso di sussidi",
+                  "banca italia","crisi post-covid","crisi economica","crisi finanziaria","crisi pandemica",
+                  "crisi industriali","crisi politica","crisi di liquidità","crisi del lavoro","crisi finanziaria",
+                  "crisi del governo","reddito di cittadinanza",
+                  "situazione finanziaria","area euro", "miliardi di euro", "milioni di euro", "miliardi euro","milioni euro",
+                  "tempo indeterminato","situazione finanziaria","situazione straordinaria","in grado",
+                  "debito buono", "in grado",  "fine della pandemia", "fine anno", "fine delle moratorie",
+                  "fine della campagna vaccinale", "tenute in vita",
+                  # 2nd round
+                  "consiglio di sorveglianza","consiglio di amministrazione","consiglio di stato","consiglio di fabbrica",
+                  "presidente del consiglio","presidente del parlamento","ex presidente del consiglio",
+                  "associazione bancaria","associazione a delinquere","cassa depositi","cassa ordinaria","cassa covid",
+                  "prestiti zombie","posizioni zombie","capitale umano","capitale produttivo","capitale ambientale",
+                  "capitale immateriale","stato di emergenza","stato di necessità","fare i conti",
+                  "mercato interno","mercato economico","mercato del lavoro", 
+                  #3rd round
+                  "ministro del lavoro","ministero del lavoro","banche italiane","banca d italia", 
+                  "banca centrale","banche europee","economia di mercato","economia italiana","economia circolare",
+                  "economia della conoscenza","economia agricola", "attività economiche","attività assicurative",
+                  "attività produttive", "beni e servizi","servizi di alloggio", "restano in vita",
+                  "intervento pubblico","tenuto in vita","tenute in vita","ristori pubblici","ristori del governo",
+                  "banca italia",
+                  "film dell orrore", "aiuti di stato","stato di salute","stato di default")
 
-bg <- bg[!(bg %in% c("debito buono"))]
+bg <- bg[!(bg %in% c("altman evidenzia poi","banca commerciale classis capital società"))]
+
+
+
+rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","grandi","meno","tutto","tutti",
+            "c'é","c'e","state","essere","percentuale", "solo","parte","ne","cosa","fare",
+            "c’è","c ’è","c'è","c 'è","d", "avere","milano","torino","bologna","napoli","pisa","quindi",
+            "volta","veneto", "termini","fatto quotidiano","la repubblica","corriere della sera", "il giornale",
+            "il corrier","corriere","il fatto","https*","fatto_quotidiano","fatto_quotidiano","fatto","poi", "mai","prima",
+            "cento","gran_parte","gran* parte", #
+            "anni","soltanto","d accordo","d_accordo","circa","però",
+            "proprio","allora","fa","ciò","stata","qui","altra","vero","là","dopo","dare", 
+           "invece", "senso", "giorni","passato",
+            "addirittura", "base",  "poco", "alto","ora","ancora", "considera","posto",
+            "presenza", "tanto",  "tutte","sorta","fronte","causa","mentre","quando",
+            "fino","secondo","terzo", "mettere", "mesi", "altri","intervista",
+             "spiegato", "presentato","tratta","punto","seguito","caso","deciso", #
+            "modo","quali","quasi","cioè", "forse","stesso","certo","po","dichiarato","detto","oggi","particolare",
+            "altre","certo","almeno","infatti","quarto","pure","può_permettersi","considerata","trova",
+            "così", "proviene","stesso_periodo","quest_anno", # "meno_rispetto","così","cosiddette"
+            "numero","è_stato", "era_stato", "fosse_stato", "in_stato_di","credo","perciò" ,
+           "riproduzione_riservata","©",
+            #
+           "molte","sostenere","settore","rapporto","chiesto",
+           "anno", "fase_attuale","esistono", "informazioni_disponibili", 
+           "contano","creando",  "fine","tempo","situazione","momento","dati","grado" , "milioni","miliardi",
+           "in_grado","mondo", "dire",
+           "nemmeno","grazie",   #
+           # 2nd round
+            "imprese_intervistate", "ottenuto" # "prova","chiaro","imprese","luglio","agosto",# ,"intervento","rischio","terziario", "futuro", "italia"
+          
+        # TRY TO REMOTE: "aumento", "mondo"
+           
+         # "d_italia","imprese intervistate","ottenuto","città", "mondo",  "attesa","ultima","domanda","dire","tema","buono", "chiuso",
+         # "febbraio","giugno","chiusura","gennaio","aprile","novembre", "linea","mese","orrore", "aumentato",
+          # SEN,
+         # "zombiefirms", "zombie",
+         # "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
+         # "zombiefirms","zombie"
+) 
+
 
 
 dfm_df <-  tokens( corpus_df,
@@ -406,11 +531,9 @@ dfm_df <-  tokens( corpus_df,
   dfm()
 
 
-zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,2]
+zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3] # +1
 freq_stat <- textstat_frequency(dfm_df, groups = rating) %>% 
-  subset(feature %in% c(zombiefirm_replace_it))
-
-
+  subset(feature %in% c(zombiefirm_replace_it, "è stato","è_stato","é stato"))
 
 # keyness, repeated for Italy and Germany ####
 
@@ -425,8 +548,8 @@ kn_de$country <- "Germany"
 
 kn_tot <- rbind(kn_it,kn_de)
 
-pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
-                 labelsize = 8, color = c("black","grey")) +
+textplot_keyness(kn_de, n = 20, margin = 0.1,
+                 labelsize = 10, color = c("black","grey")) +
   ylab(kn_de$country) +
   xlab(expression(chi^2)) +
  theme_bw()  +
@@ -435,12 +558,159 @@ pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
     axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
     plot.title = element_text(hjust = 0.5),legend.position = "bottom",
         legend.text = element_text(size=20))
+ggsave(filename = paste0("images/",unique(kn_de$country),".jpg"), width = 20, height = 30)
 
 ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(filename = "images/kntot.jpg", width = 17, height = 25)
+ggsave(filename = "images/kntot.jpg", width = 22, height = 30)
 
 # ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
 
+
+
+
+
+# NO tk_df (co-occurrence) ITA, document ####
+
+# co-occurrences feature matrix Italy left
+# 
+# fcm_lfdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
+#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
+#                  remove_numbers = TRUE,remove_url = FALSE) %>%
+#   tokens_tolower() %>% 
+#   tokens_compound(phrase(c(compound_it,bg))) %>%
+#   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
+#   fcm(context = "window", window = 20) 
+# 
+# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
+# # co-occurrence plot left
+# co_occur_network_lfdc <- graph_from_adjacency_matrix(fcm_lfdc, mode = "undirected", diag = FALSE ) # , weighted = T
+# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# 
+# E(co_occur_network_lfdc)$weight <- 1
+# co_occur_network_lfdc <- simplify(co_occur_network_lfdc, edge.attr.comb=list(weight="sum"))
+# 
+# # co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_lfdc$ref <- "Italy Left"
+# # tkplot for interactive networks (don't close while working on the code!)
+# # tk_lf <- tkplot(co_occur_network_lf)
+# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+# 
+# lf_lg <- as_long_data_frame(co_occur_network_lfdc)
+# names(lf_lg)[names(lf_lg) == "ver[el[, 1], ]"] <- "from_term"
+# names(lf_lg)[names(lf_lg) == "ver2[el[, 2], ]"] <- "to_term"
+# 
+# frommplf <- lf_lg[lf_lg$from_term == "imprese_zombie",]
+# tomplf <- lf_lg[lf_lg$to_term == "imprese_zombie",]
+# totlf <- rbind(frommplf,tomplf)
+# totlf <- totlf[order(-totlf$weight),]
+# write.csv2(totlf,file="impz_itlf_win20.csv",row.names = F)
+# 
+# 
+# 
+# 
+# 
+# 
+# # Same procedure for Italy right
+# fcm_rtdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
+#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
+#                  remove_numbers = TRUE,remove_url = FALSE) %>%
+#   tokens_tolower() %>% 
+#   tokens_compound(phrase(c(compound_it,bg))) %>%
+#   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
+#   fcm(context = "window", window = 20) 
+# 
+# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
+# # co-occurrence plot left
+# co_occur_network_rtdc <- graph_from_adjacency_matrix(fcm_rtdc, mode = "undirected", diag = FALSE ) # , weighted = T
+# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# 
+# E(co_occur_network_rtdc)$weight <- 1
+# co_occur_network_rtdc <- simplify(co_occur_network_rtdc, edge.attr.comb=list(weight="sum"))
+# 
+# # co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_rtdc$ref <- "Italy Right"
+# # tkplot for interactive networks (don't close while working on the code!)
+# # tk_lf <- tkplot(co_occur_network_lf)
+# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+# 
+# rt_lg <- as_long_data_frame(co_occur_network_rtdc)
+# names(rt_lg)[names(rt_lg) == "ver[el[, 1], ]"] <- "from_term"
+# names(rt_lg)[names(rt_lg) == "ver2[el[, 2], ]"] <- "to_term"
+# 
+# frommprt <- rt_lg[rt_lg$from_term == "imprese_zombie",]
+# tomprt <- rt_lg[rt_lg$to_term == "imprese_zombie",]
+# totrt <- rbind(frommprt,tomprt)
+# totrt <- totrt[order(-totrt$weight),]
+# write.csv2(totrt,file="impz_itrt_win20.csv",row.names = F)
+
+
+# NO tk_df (co-occurrence) DEU, document ####
+
+# fcm_lfdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
+#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
+#                  remove_numbers = TRUE,remove_url = FALSE) %>%
+#   tokens_tolower() %>% 
+#   tokens_compound(phrase(c(compound_de,bg))) %>%
+#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de))%>%
+#   fcm(context = "document") 
+# 
+# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
+# # co-occurrence plot left
+# co_occur_network_lfdc <- graph_from_adjacency_matrix(fcm_lfdc, mode = "undirected", diag = FALSE ) # , weighted = T
+# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# 
+# E(co_occur_network_lfdc)$weight <- 1
+# co_occur_network_lfdc <- simplify(co_occur_network_lfdc, edge.attr.comb=list(weight="sum"))
+# 
+# # co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_lfdc$ref <- "Italy Left"
+# # tkplot for interactive networks (don't close while working on the code!)
+# # tk_lf <- tkplot(co_occur_network_lf)
+# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+# 
+# lf_lg <- as_long_data_frame(co_occur_network_lfdc)
+# names(lf_lg)[names(lf_lg) == "ver[el[, 1], ]"] <- "from_term"
+# names(lf_lg)[names(lf_lg) == "ver2[el[, 2], ]"] <- "to_term"
+# 
+# frommplf <- lf_lg[lf_lg$from_term == "zombie_unternehmen",]
+# tomplf <- lf_lg[lf_lg$to_term == "zombie_unternehmen",]
+# totlf <- rbind(frommplf,tomplf)
+# totlf <- totlf[order(-totlf$weight),]
+# write.csv2(totlf,file="impz_delf_sen.csv",row.names = F)
+# 
+# # right Germany
+# 
+# fcm_rtdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
+#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
+#                  remove_numbers = TRUE,remove_url = FALSE) %>%
+#   tokens_tolower() %>% 
+#   tokens_compound(phrase(c(compound_de,bg))) %>%
+#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>%
+#   fcm(context = "window",window = 20) 
+# 
+# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
+# # co-occurrence plot left
+# co_occur_network_rtdc <- graph_from_adjacency_matrix(fcm_rtdc, mode = "undirected", diag = FALSE ) # , weighted = T
+# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# 
+# E(co_occur_network_rtdc)$weight <- 1
+# co_occur_network_rtdc <- simplify(co_occur_network_rtdc, edge.attr.comb=list(weight="sum"))
+# 
+# # co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_rtdc$ref <- "Germany Right"
+# # tkplot for interactive networks (don't close while working on the code!)
+# # tk_lf <- tkplot(co_occur_network_lf)
+# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+# 
+# rt_lg <- as_long_data_frame(co_occur_network_rtdc)
+# names(rt_lg)[names(rt_lg) == "ver[el[, 1], ]"] <- "from_term"
+# names(rt_lg)[names(rt_lg) == "ver2[el[, 2], ]"] <- "to_term"
+# 
+# frommprt <- rt_lg[rt_lg$from_term == "zombie_unternehmen",]
+# tomprt <- rt_lg[rt_lg$to_term == "zombie_unternehmen",]
+# totrt <- rbind(frommprt,tomprt)
+# totrt <- totrt[order(-totrt$weight),]
+# write.csv2(totrt,file="impz_dert_win20.csv",row.names = F)
 
 
 
@@ -448,79 +718,167 @@ ggsave(filename = "images/kntot.jpg", width = 17, height = 25)
 
 # co-occurrences feature matrix Italy left
 
+
 fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
                 remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                 remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_it,bg))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
-  fcm(context = "window", window = 20) 
+  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+  fcm(context = "window", window = 20, tri = FALSE) 
 
-fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-# co-occurrence plot left
-co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE ) # , weighted = T
-E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+co_occur_network_lf <- graph_from_adjacency_matrix(fcm_lf, mode = "undirected", diag = FALSE) # , weighted = T
+nm_occ <- as.data.frame(names(V(co_occur_network_lf)))
+dg_occ <- as.data.frame(strength(co_occur_network_lf))
+df_occ <- cbind(nm_occ,dg_occ)
+df_occ <- df_occ[order(-strength(co_occur_network_lf)),]
+df_occ[1:30,]
 
-E(co_occur_network_lf)$weight <- 1
-co_occur_network_lf <- simplify(co_occur_network_lf, edge.attr.comb=list(weight="sum"))
+co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:30,1]),
+                                                    mode = "undirected", diag = FALSE)
 
-co_occur_network_lf <- simplify(co_occur_network_lf)
-co_occur_network_lf$ref <- "Italy Left"
+
+E(co_occur_network_lf2)$weight <- 1
+co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
+co_occur_network_lf2$ref <- paste0(unique(corpus_df$country)," ","Left")
+
+# fctop_lf <- topfeatures(fcm_lf,30) %>% names()
+# # co-occurrence plot left
+# # co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE ) # , weighted = T
+# co_occur_network_lf <- graph_from_adjacency_matrix(fcm_lf, mode = "undirected", diag = FALSE) # , weighted = T
+#   nm_occ <- as.data.frame(names(V(co_occur_network_lf)))
+#   dg_occ <- as.data.frame(strength(co_occur_network_lf))
+#   df_occ <- cbind(nm_occ,dg_occ)
+#   df_occ <- df_occ[order(-strength(co_occur_network_lf)),]
+#   df_occ[1:30,]
+#   
+# E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# 
+# E(co_occur_network_lf)$weight <- 1
+# co_occur_network_lf <- simplify(co_occur_network_lf, edge.attr.comb=list(weight="sum"))
+# 
+# co_occur_network_lf <- simplify(co_occur_network_lf)
+# co_occur_network_lf$ref <- paste0(unique(corpus_df$country)," ","Left")
 # tkplot for interactive networks (don't close while working on the code!)
 # tk_lf <- tkplot(co_occur_network_lf)
 # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
 
-# Sane procedure for Italy right
+# Same procedure for Italy right
 fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_it,bg))) %>%
   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
-  fcm(context = "window", window = 20) 
+  fcm(context = "window", window = 20, tri = FALSE) 
 
-fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
-co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
-E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
+co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE) # , weighted = T
+nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
+dg_occrt <- as.data.frame(strength(co_occur_network_rt))
+df_occrt <- cbind(nm_occrt,dg_occrt)
+df_occrt <- df_occrt[order(-strength(co_occur_network_rt)),]
+df_occrt[1:30,]
 
-co_occur_network_rt <- simplify(co_occur_network_rt)
-co_occur_network_rt$ref <- "Italy Right"
+co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:30,1]),
+                                                    mode = "undirected", diag = FALSE)
+
+
+E(co_occur_network_rt2)$weight <- 1
+co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
+co_occur_network_rt2$ref <- paste0(unique(corpus_df$country)," ","Right")
+
+# fctop_rt <- topfeatures(fcm_rt, 30) %>% names()
+# # co-occurrence plot left
+# co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE ) # , weighted = T
+# # co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE ) # , weighted = T
+# #  co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt,  mode = "undirected", diag = FALSE ) # , weighted = T
+# nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
+# dg_occrt <- as.data.frame(strength(co_occur_network_rt))
+# df_occrt <- cbind(nm_occrt,dg_occrt)
+# df_occrt <- df_occrt[order(-strength(co_occur_network_rt)),]
+# df_occrt[1:30,]
+# 
+# E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
+# 
+# E(co_occur_network_rt)$weight <- 1
+# co_occur_network_rt <- simplify(co_occur_network_rt, edge.attr.comb=list(weight="sum"))
+# 
+# co_occur_network_rt <- simplify(co_occur_network_rt)
+# co_occur_network_rt$ref <- paste0(unique(corpus_df$country)," ","Right")
+
+
 # tk_rt <- tkplot(co_occur_network_rt)
 # l_rt <- tkplot.getcoords(tk_rt)
 
 # tk_df (co-occurrence) DEU, to be used in Co-occurrences section  ####
 # left co-occurrence matrix
+
 fcm_lf <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_de,bg))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de))%>%
-  fcm(context = "window", window = 20) 
+  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>%
+  fcm(context = "window", window = 20, tri = FALSE) 
 
-fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE)
-E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
-co_occur_network_lf <- simplify(co_occur_network_lf)
-co_occur_network_lf$ref <- "Germany Left"
+# fctop_lf <- topfeatures(fcm_lf, 30) %>% names()
+
+co_occur_network_lf <- graph_from_adjacency_matrix(fcm_lf, mode = "undirected", diag = FALSE) # , weighted = T
+nm_occ <- as.data.frame(names(V(co_occur_network_lf)))
+dg_occ <- as.data.frame(strength(co_occur_network_lf))
+df_occ <- cbind(nm_occ,dg_occ)
+df_occ <- df_occ[order(-strength(co_occur_network_lf)),]
+df_occ[1:30,]
+
+co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:30,1]),
+                                                    mode = "undirected", diag = FALSE)
 
 
-# right co-occurrence matrix
+E(co_occur_network_lf2)$weight <- 1
+co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
+co_occur_network_lf2$ref <- paste0(unique(corpus_df$country)," ","Left")
+
+# co-occurrence plot left
+# co_occur_network_lf <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = fctop_lf), mode = "undirected", diag = FALSE ) # , weighted = T
+# E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
+# co_occur_network_lf <- simplify(co_occur_network_lf)
+
+# tkplot for interactive networks (don't close while working on the code!)
+# tk_lf <- tkplot(co_occur_network_lf)
+# l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
+
+# Same procedure for Italy right
 fcm_rt <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(compound_de,bg))) %>%
   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>%
-  fcm(context = "window", window = 20) 
-fctop_rt <- topfeatures(fcm_rt, 20) %>% names()
-co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE)
+  fcm(context = "window", window = 20, tri = FALSE) 
+# fctop_rt <- topfeatures(fcm_rt, 30) %>% names()
+
+co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE) # , weighted = T
+nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
+dg_occrt <- as.data.frame(strength(co_occur_network_rt))
+df_occrt <- cbind(nm_occrt,dg_occrt)
+df_occrt <- df_occrt[order(-strength(co_occur_network_rt)),]
+df_occrt[1:30,]
+
+co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:30,1]),
+                                                    mode = "undirected", diag = FALSE)
+
+E(co_occur_network_rt2)$weight <- 1
+co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
+co_occur_network_rt2$ref <- paste0(unique(corpus_df$country)," ","Right")
+
+
+# co-occurrence plot left
+# co_occur_network_rt <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = fctop_rt), mode = "undirected", diag = FALSE ) # , weighted = T
 # E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
-co_occur_network_rt <- simplify(co_occur_network_rt)
-co_occur_network_rt$ref <- "Germany Right"
+# co_occur_network_rt <- simplify(co_occur_network_rt)
 
 
-# newtest
+# newtest to delete ####
 
 # df_rt <- dfm_subset(dfm_df,datet >= "2020-01-01" & rating == "right")
 # tp_df_rt <- names(topfeatures(df_rt, 20))
@@ -553,52 +911,172 @@ co_occur_network_rt$ref <- "Germany Right"
 # Leave the window open until end of plotting final figures.
 
 # left-wing co-occurrences
-tk_lf <- tkplot(co_occur_network_lf)
+tk_lf <- tkplot(co_occur_network_lf2)
 l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
 
  par(mar = c(0, 0,1.3 , 0)) 
-plot(co_occur_network_lf,
+plot(co_occur_network_lf2,
      layout = l_lf,
-        vertex.size = strength(co_occur_network_lf),
+        vertex.size = ( strength(co_occur_network_lf2) / max(strength(co_occur_network_lf2)) * 20) , # (strength(co_occur_network_lf2) / max(strength(co_occur_network_lf2)) * 10) ,
      vertex.shape = "circle",
-     vertex.label =  paste0(V(co_occur_network_lf)$name, strength(co_occur_network_lf) ),
+     vertex.label =  paste0(V(co_occur_network_lf2)$name), #, strength(co_occur_network_lf) ),
      vertex.label.color = "black",
-     vertex.label.cex = 2,
+     vertex.label.cex = 1.2,
      vertex.color = "grey",
    #  edge.width = (E(co_occur_network_lf)$weight / 4),
-   edge.width = E(co_occur_network_lf)$weight,
-   edge.label =  E(co_occur_network_lf)$weight,
+   edge.width = E(co_occur_network_lf2)$weight,
+  # edge.label =  E(co_occur_network_lf)$weight,
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_lf)$name == "zombiefirms",2,1),
-     vertex.label.dist = 1.8
+     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombiefirms",2,1),
+     vertex.label.dist = 1.2
     
 )
-title(co_occur_network_lf$ref,cex.main=2)
+title(co_occur_network_lf2$ref,cex.main= 1.5)
 
 
 # right-wing co-occurrences
 
-tk_rt <- tkplot(co_occur_network_rt) 
+tk_rt <- tkplot(co_occur_network_rt2) 
 l_rt <- tkplot.getcoords(tk_rt)
-plot(co_occur_network_rt,
+par(mar = c(0, 0,1.3 , 0)) 
+plot(co_occur_network_rt2,
      layout = l_rt,
-     # main = "Italy Right",
-     vertex.size = eigen_centrality(co_occur_network_rt)$vector * 15,
+     vertex.size = (strength(co_occur_network_rt2) / max(strength(co_occur_network_rt2)) * 20) ,
      vertex.shape = "circle",
-     vertex.label = V(co_occur_network_rt)$name,
+     vertex.label =  paste0(V(co_occur_network_rt2)$name), #, strength(co_occur_network_rt) ),
      vertex.label.color = "black",
-     vertex.label.cex = 2,
+     vertex.label.cex = 1.2,
      vertex.color = "grey",
-   edge.width = (E(co_occur_network_rt)$weight / 4),
-    
-     vertex.label.font = ifelse(V(co_occur_network_rt)$name == "zombiefirms",2,1),
-     vertex.label.dist = 1
+     #  edge.width = (E(co_occur_network_rt)$weight / 4),
+     edge.width = E(co_occur_network_rt2)$weight,
+    #  edge.label =  E(co_occur_network_rt)$weight,
+     layout=layout.circle,
+     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombiefirms",2,1),
+     vertex.label.dist = 1.2
+     
 )
-title(co_occur_network_rt$ref,cex.main=2)
+title(co_occur_network_rt2$ref,cex.main=1.5)
+
+
+
+# Keyness zombie ####
+
+kn_sen_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+                           target = "right")
+kn_sen_de$country <- unique(corpus_sen$country)
+
+kn_sen_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+                              target = "right")
+kn_sen_it$country <- unique(corpus_sen$country)
+
+kn_sen_de <- kn_sen_de %>% filter(feature %in% c("wirtschaft","geschäftsführer","insolvenzrecht","corona-hilfen","gefahr",
+                                               "bundesregierung","nullzinspolitik","geschäftspartner","bank",
+                                               "warnung","leben halten", "corona", "zukunft", "nicht_überlebensfähig", 
+                                               "pflicht","überleben", "kurzarbeit","analyse","ressourcen","recht",
+                                               "bundesbank",
+                                           "banche","credito_garantito","imprese","terziario","società","gestione","futuro",
+                                           "italia","debito","continua_erogazione",
+                                           "draghi","intervento","mercato","pioggia","urgenza","g30","ristori",
+                                           "in_piedi","risorse_pubbliche","lavoratori"))
+
+kn_sen_de_pl
+kn_sen_it_pl
+
+textplot_keyness(kn_sen_de, 
+                 n = 20, margin = 0.1,
+                 labelsize = 8, color = c("black","grey")) +
+  ylab(kn_sen_de$country) +
+  xlab(expression(chi^2)) +
+  theme_bw()  +
+  theme( axis.title.y = element_text(size = 20),
+         axis.text.y = element_blank(),axis.ticks.y = element_blank(),
+         axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
+         plot.title = element_text(hjust = 0.5),legend.position = "bottom",
+         legend.text = element_text(size=20))
+ggsave(filename = paste0("images/kn_senNO_",unique(kn_sen_de$country),".jpg"), width = 15, height = 13 ) # 8)
+
+ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+ggsave(filename = "images/knsen.jpg", width = 15, height = 13)
+
+# 
+# zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3])
+# zombieterms <- c(zombieterms,"zombie")
+# zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
+# 
+# tx_sen <- txdf %>% filter(str_detect(text,zombiefirm_replace_it))
+# 
+# corpus_sen <- corpus(tx_sen)
+# 
+# e <- a %>% filter(!(a$doc_id %in% b$doc_id))
+# 
+# 
+# dfm_sen <-  tokens( corpus_sen,
+#                    remove_punct = TRUE,
+#                    remove_symbols = TRUE,
+#                    remove_separators = TRUE,
+#                    remove_numbers = TRUE,
+#                    remove_url = FALSE
+# ) %>%
+#   tokens_tolower() %>% 
+#   # tokens_compound(phrase(c(compound_it,bg))) %>%
+#   # tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+#   tokens_compound(phrase(c(compound_de,bg))) %>%
+#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de, rem_dekey)) %>% 
+#   dfm()
+# 
+# dfm_df <-  tokens( corpus_df,
+#                    remove_punct = TRUE,
+#                    remove_symbols = TRUE,
+#                    remove_separators = TRUE,
+#                    remove_numbers = TRUE,
+#                    remove_url = FALSE
+# ) %>%
+#   tokens_tolower() %>% 
+#   tokens_compound(phrase(c(compound_de,bg))) %>%
+#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de, rem_dekey)) %>% 
+#   dfm()
+
+# kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_sen, datet >= "2020-01-01" ),groups = rating),
+#                           target = "right")
+# kn_it$country <-  "Italy"
+
+
+
+# Qualitative ####
+
+de_results <- read.xls("zombiefirms.xls",sheet = "de_results")[,1]
+it_results <- read.xls("zombiefirms.xls",sheet = "it_results")[,1]
+
+results = list()
+for (i in it_results) {
+  count_tibble = str_count(tx_sen_ita$text,i)
+  results[[i]] = count_tibble
+}
+
+results
+
+it_i <- bind_rows(results, .id = i)
+
+tx_sen_ita_wc <- cbind(tx_sen_ita,it_i)
+save(tx_sen_ita_wc,file="tx_sen_ita_wc.Rdata")
+
+data_long = gather(tx_par_ita_wc[tx_par_ita_wc$datet >= "2020-01-01",], terms, value, 32:50, factor_key=TRUE)
+data_longg %>% group_by(doc_id,text) %>% summarise(tot = sum(value))
+
+df <- data_long[data_long$value > 1,]
+ggplot(df,aes(x=terms,y=value)) + geom_bar(stat="identity") + 
+  facet_wrap(~ df$doc_id) + coord_flip()
+
+plotly::ggplotly(tbterm)
+
+##
+
+
+
+
 
 
 # occurrences to specific term, repeated for each document-term-matrix ####
-
 calculateCoocStatistics <- function(coocTerm, binDTM, measure = "DICE"){
   
   # Ensure Matrix {SparseM} or matrix {base} format
