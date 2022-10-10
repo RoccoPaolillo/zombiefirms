@@ -31,22 +31,18 @@ setwd("C:/Users/rocpa/OneDrive/Desktop/CNT/zombie_firms/I_review/")
 
 ## to find regex (root words/combinations) of "zombie firms" terms
 
-df_word <- unique(stringr::str_extract_all(txdf$text,
-        regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* kleine \\-?[:alnum:]*\\-?[:alnum:]* \\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*",
+df_word <- unique(stringr::str_extract_all(tx_sen$text,
+        regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* danneggiare \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*",
                                                  ignore_case = TRUE)))
 
 unique(unlist(df_word))
 
-checksen <- txdf %>% filter(str_detect(text,"pflicht"))
+checksen <- txdf %>% filter(str_detect(text,"\\bama\\b"))
 
 de_res <- unique(read.xls("zombiefirms.xls",sheet = "de_result2")[,1])
 de_res <- paste0("\\b",de_res,"\\b",collapse="|")
 
-
-
-
-
-## check doubles and out of context texts
+## check doubles and out of context texts ####
 # 
 # dfm_sim <- dfm(tokens(corpus_de08)) # corpus needs to be uploaded
 # 
@@ -115,11 +111,16 @@ de_res <- paste0("\\b",de_res,"\\b",collapse="|")
 ## To change in corpus_df to run, where otherwise  ####
 
 ## ITALY PROCESSING #####
+# load("corpus_it_decotte.Rdata")
+# corpus_it_decotte$datet <- corpus_it_decotte$date
+#  corpus_it08 <- corpus_it08 + corpus_subset(corpus_it_decotte, !(corpus_it_decotte$id %in% corpus_it08$id))
 
 load("corpus_it08orig.Rdata")
+corpus_it08 <- corpus_it08[!duplicated(docvars(corpus_it08)),]
+
 # bigrams, trigrams (not used) and variables
 bg <- pull(read.csv("it_bigrams_08.csv"),2)
-trg <- pull(read.csv("it_trigrams_08.csv"),2)
+# trg <- pull(read.csv("it_trigrams_08.csv"),2)
 corpus_it08$country <- "Italy"
 corpus_it08$covidtp[corpus_it08$datet < "2020-01-01"] <- "before 2020-01-01"
 corpus_it08$covidtp[corpus_it08$datet >= "2020-01-01"] <- "after 2020-01-01"
@@ -141,17 +142,83 @@ corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c(
   # double similar
    "GN_GIONLE0020130426e94q00082","CS_CORDES0020171218edci0000g","CS_CORSUP0020200706eg760000o", 
    "CS_CORDES0020210201eh210007q",
-   # outliers length
-  "CS_CORVEN0020210313eh3d00002","RP_REPONL0020191104efb4000ma","RP_REPONL0020211024ehao0028w", 
-  "CS_CORVEN0020210209eh290000k", "RP_LAREP00020200720eg7k0003c",
+   "CS_CORSUP0020200406eg4600017","CS_CORONL0020200503eg53000br",
+   #
+   "CS_CORDES0020200629eg6t00017",
+   "CS_CORDES0020201102egb20001h",
+   "CS_CORSUP0020210419eh4j0000w",
+   # outliers length # too short
+   "RP_LAREP00020200720eg7k0003c",  
+   "RP_LAREP00020210203eh230002c",
+   # only piece of information
+   "RP_LAREP00020201217egch0002h",
+   "CS_CORDES0020201222egcm0002s",
+   "GN_GIONLE0020210216eh2g0001l",
+   "CS_CORDES0020210320eh3k0006t",
+   "RP_LAREP00020210412eh4c0000i",
   # out of context
+  "GN_GIONLE0020211003eha300010", # just mention
+ "CS_CORVEN0020210209eh290000k", # summary
+ "FQ_FATONL0020210310eh3a000bs", # summary
+ "RP_REPONL0020211024ehao0028w", # not content
+ "RP_REPONL0020191104efb4000ma" , # date 2019
+  "CS_CORVEN0020210313eh3d00002", # about vaccine
   "CS_CORDES0020141219eacj00063", # about actress Gwyne Paltrow
   "FQ_FATONL0020210212eh2c0008w", # about Berlusconi, mention like joke (Berlusconi zombie company)
   "CS_CORDES0020160118ec1i00072", # about enterpreneur Calabrò, just mention
-  "FQ_FATQUO0020150918eb9h0000m" # American federal bank, mention to Europe,
-  # "CS_CORONL0020200706eg76000en", # startup Intesa San Paolo TO GET IT OUT!
+  "FQ_FATQUO0020150918eb9h0000m", # American federal bank, mention to Europe,
+  "FQ_FATONL0020200115eg1f000b6", # Camorra case,
+  "CS_CORONL0020200131eg1v000xf", # Jacobini family Puglia,
+  "CS_CORDES0020200217eg2h0002o", # real madrid 
+  "CS_CORONL0020200131eg1v00107",# Jacobini family Puglia,
+  "CS_CORDES0020200201eg2100015", # Jacobini family Puglia,
+  "RP_REPBAR0020200201eg210000k", # Jacobini family Puglia court,
+  "RP_LAREP00020200506eg5600001", # Germany Karlsruhe decision vs state bond selling by EU
+  "CS_CORONL0020200507eg570008e", # Germany kurzarbeit explanation
+  "FQ_FATQUO0020200508eg570000n", # Personal reply
+  "GN_GIONLE0020200514eg5e0003v", # not relevant, personal info
+  "RP_LAREP00020200613eg6d00047", # cina
+  "CS_CORDES0020200615eg6f0004u", # short info
+  "CS_CORSUP0020200615eg6f0000m", # short info
+  "RP_LAREP00020200622eg6m0000j", # 70's, not in relation to covid
+  "CS_CORONL0020200719eg7j0005l", # Lega specific courtship case
+  "CS_CORDES0020200724eg7o0007l", # Corneliani firm, out of covid
+  "RP_REPTOR0020200803eg8300008", # courthsip, no covid
+  "RP_LAREP00020200913eg9d0001s", # Milan singular court case
+  "CS_CORONL0020200922eg9m000by", # mention in Brianza antigen
+  "FQ_FATONL0020200923eg9n0008u", # mention in Brianza antigen
+  "FQ_FATQUO0020200928eg9r0000h", # no Italy
+  "RP_LAREP00020201019egaj0001p", # Cina
+  "RP_LAREP00020201204egc400012", # Lega
+  "CS_CORDES0020210116eh1g00083", # personal story
+  "CS_CORSUP0020200629eg6t0000n", # out of context, general comment industry
+  "CS_CORONL0020201031egav0008n", # summary of issue, no content 
+  "CS_CORSUP0020201109egb90000y", # EU level
+  "GN_GIONLE0020201211egcb00014", # ilva no covid
+  "RP_REPNAP0020210117eh1h0000h", # napoli no covid
+  "FQ_FATONL0020210129eh1s00008", # usa gamestop no covid
+  "FQ_FATQUO0020210130eh1t0000r", # usa gamestop no covid, reflection ita
+  "RP_REPTOR0020210218eh2i0000n", # individual court case, no covid
+  "RP_REPTOR0020210218eh2i0000s", # individual court case, no covid
+  "CS_CORONL0020210418eh4i001bi", # individual story, no covid
+  "CS_CORDES0020210618eh6i00075", # small piece info
+  "CS_CORDES0020210903eh930001t", # snapshot interview no covid
+  "GN_GIONLE0020211016ehag0003i", # small input info, within series snapshots
+  "RP_REPGEN0020211208ehc800002", # Ferrero footbal manager case, no covid
+  "CS_CORONL0020211208ehc80006r", # Ferrero footbal manager case, no covid
+  "RP_REPGEN0020211211ehcb00005", # Ferrero footbal manager case, no covid
+  "RP_REPGEN0020211211ehcb0002b", # Ferrero footbal manager case, no covid
+  "RP_REPGEN0020211218ehci0000g", # Ferrero footbal manager case, no covid
+  "RP_REPGEN0020220113ei1d00004", # court case, no covid
+  "CS_CORDES0020210209eh290004j", # piece of news
+  "CS_CORSUP0020210713eh7d0000v", # about cooperatives, not politics involvement
+  "GN_GIONLE0020210302eh320002j", # out of context,
+  "GN_GIONLE0020210501eh5100003", # short, court case
+  "CS_CORONL0020211103ehb30015p", # just mentioned, broad comment on Draghi
+  "CS_CORONL0020200706eg76000en" # startup Intesa San Paolo
 ))
 
+corpus_it08 <- corpus_subset(corpus_it08,datet >= "2020-01-01")
 
 # GERMANY PROCESSING ####
 
@@ -211,12 +278,18 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
   "FZ_FZ_20200904", "FZ_FD1202009126082842","FZ_FD2202009166086472","FZ_FD1202009176087739","FZ_FZ_20200918",
   "FZ_FD2202010066098334","FZ_FZ_20201019", "FZ_FD1202011096122521", "FZ_SD1202011296136764","FZ_FZ_20201224",
   "FZ_FD1202104276234436","FZ_FD1202108025000526464873", #
-  
- # #outliers length,
-  "ZT_DIEZEI0020201119egbj0000m","WT_WSONNT0020140921ea9l0004y","ZT_DIEZEI0020210805eh850000v",
-  "WT_WELTON0020200712eg7c0005l","WT_WELTON0020200427eg4q00005" ,
- "FZ_FD1202007116039759","FZ_SD1202101316179362","WT_WSONNT0020200816eg8g0001g",
+  # outlier length # too short
+  "WT_WSONNT0020200816eg8g0001g",
+  # piece of information
+  "WT_DWELT00020201124egbo0000t",
  # meaningless
+ "ZT_DIEZEI0020200827eg8r0000t", # shortening work hours,
+ "WT_WELTON0020201214egce000gb", # interview with banker on  general finance state, not limited covid
+ "ZT_DIEZEI0020201119egbj0000m", # story-like dossier on receving credit loan
+ "FZ_FD1202007116039759", # interview to min. economy Peter Altmaier at time, out of context
+ "WT_WELTON0020200427eg4q00005" , # history out of context
+ "WT_WELTON0020200712eg7c0005l", # abroad enterprises
+ "ZT_DIEZEI0020210805eh850000v", # competition automotive
  "WT_WELTON0020201228egcs000bz" , # meaningless DAX
  "SZ_SDDZ000020170714ed7e0001x" , # menaingless music
  "WT_WELTON0020211119ehbj00088" , # meaningless flies
@@ -229,7 +302,6 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
  "SZ_SDDZ000020170120ed1k0002b" , # meaningless movie
  "SZ_SUDZEIT020170713ed7d0002u" , # U2 concerts
  "SZ_SDDZ000020181112eebc0001r", # music album
- #
  "SZ_SDDZ000020140818ea8i000gw", # essay economics
  "SZ_SDDZ000020201231egcv0001k", # personal diary
  "SZ_SDDZ000020200228eg2s0002t", # China
@@ -240,10 +312,10 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
 
 # clean corpus ####
 
- corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
-# corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+# corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+  corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
 
-# corpus_df <- corpus_reshape(corpus_df, to = "sentences")
+#  corpus_df <- corpus_reshape(corpus_df, to = "sentences")
 # corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
 
 corpus_df <- tolower(corpus_df)
@@ -426,7 +498,7 @@ corpus_sen <- corpus(tx_sen)
 
 # txit$text <- stri_replace_all_fixed(txit$text, zombiefirm_pattern,  zombiefirm_replace, vectorize_all=FALSE)
 
-
+#### cmp ####
 compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
                   "cassa integrazione","cassa lavoro", "settore terziario", "settore turistico",
                   "unione europea","salva italia","decreto ristori","decreti ristoro",
@@ -457,7 +529,7 @@ compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società
                   "crisi del governo","reddito di cittadinanza",
                   "situazione finanziaria","area euro", "miliardi di euro", "milioni di euro", "miliardi euro","milioni euro",
                   "tempo indeterminato","situazione finanziaria","situazione straordinaria","in grado",
-                  "debito buono", "in grado",  "fine della pandemia", "fine anno", "fine delle moratorie",
+                  "debito buono","debito cattivo", "in grado",  "fine della pandemia", "fine anno", "fine delle moratorie",
                   "fine della campagna vaccinale", "tenute in vita",
                   # 2nd round
                   "consiglio di sorveglianza","consiglio di amministrazione","consiglio di stato","consiglio di fabbrica",
@@ -473,7 +545,28 @@ compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società
                   "attività produttive", "beni e servizi","servizi di alloggio", "restano in vita",
                   "intervento pubblico","tenuto in vita","tenute in vita","ristori pubblici","ristori del governo",
                   "banca italia",
-                  "film dell orrore", "aiuti di stato","stato di salute","stato di default")
+                  "film dell orrore", "aiuti di stato","stato di salute","stato di default",
+                  #4th round
+                  "business intelligence","economia reale","economia finanziaria","economia espansiva",
+                  "distruzione creativa","creative destruction","fondo perduto", "gruppo ilva",
+                  #5th round
+                  "senza *","niente *",
+                  "azione di governo","distribuzione dei dividendi","distribuzione della ricchezza","distribuzione del capitale",
+                  "distribuzione di dividendi","distribuzione degli utili",
+                  "sovranità monetaria","articolo 11","articolo 54","articolo 45","articolo 50",
+                  "trasporto locale","trasporto aereo",
+                  "segretario del tesoro","ministro del tesoro","segreteria al tesoro","tesoro pubblico",
+                  # kn
+                  "spese clientelari","gruppo intesa sanpaolo","gruppo cgbi","gruppo dei 30","gruppo dei trenta",
+                  "gruppo roma capitale","gruppo bancario","gruppo marriot bonvoy",
+                  "compagnia di bandiera","compagnie aeree",
+                  "zero ore","interesse a zero","beni intermedi","beni pubblici","beni durevoli","beni di consumo",
+                  "giro di carte",
+                  "limite di indebitamento",
+                  "mancanza di risorse","mancanza di liquidità","mancanza di consumi", "mancanza di interventi",
+                  "ragazzi di terza media","ragazzi del quartiere"
+                  # "tenere in vita"
+                  )
 
 bg <- bg[!(bg %in% c("altman evidenzia poi","banca commerciale classis capital società"))]
 
@@ -504,16 +597,22 @@ rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","gr
            "in_grado","mondo", "dire",
            "nemmeno","grazie",   #
            # 2nd round
-            "imprese_intervistate", "ottenuto" # "prova","chiaro","imprese","luglio","agosto",# ,"intervento","rischio","terziario", "futuro", "italia"
-          
-        # TRY TO REMOTE: "aumento", "mondo"
+            "imprese_intervistate", "ottenuto" , 
+           # 3rd round                                      # ,  # "prova","chiaro","imprese","luglio","agosto",# ,"intervento","rischio","terziario", "futuro", "italia"
+            "stima","aumentare","roma","articolo","quantità","numeri","entro",
+           "richiede","far","percorso",
+           "sempre" 
+           
+           #, "zia",
+        # TRY TO REMOVE: "aumento", "mondo"
            
          # "d_italia","imprese intervistate","ottenuto","città", "mondo",  "attesa","ultima","domanda","dire","tema","buono", "chiuso",
          # "febbraio","giugno","chiusura","gennaio","aprile","novembre", "linea","mese","orrore", "aumentato",
           # SEN,
-         # "zombiefirms", "zombie",
-         # "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
-         # "zombiefirms","zombie"
+        #  "zombiefirms", "zombie",
+        #  "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
+        #  "zombiefirms","zombie",
+        # "troppe","tante","troppe","tante","passo","possono"
 ) 
 
 
@@ -533,7 +632,13 @@ dfm_df <-  tokens( corpus_df,
 
 zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3] # +1
 freq_stat <- textstat_frequency(dfm_df, groups = rating) %>% 
-  subset(feature %in% c(zombiefirm_replace_it, "è stato","è_stato","é stato"))
+  subset(feature %in% c(zombiefirm_replace_it, "è stato","è_stato","é stato",
+                        "azienda decotta",
+                        "imprese decotte",
+                        "aziende decotte",
+                        "società decotte",
+                        "industrie decotte"
+  ))
 
 # keyness, repeated for Italy and Germany ####
 
@@ -542,13 +647,23 @@ kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),g
                  target = "right")
 kn_it$country <-  "Italy"
 
+pl_knit <- textplot_keyness(kn_it, n = 20, margin = 0.1,
+                 labelsize = 10, color = c("black","grey")) +
+  ylab(kn_it$country) +
+  xlab(expression(chi^2)) +
+  theme_bw()  +
+  theme( axis.title.y = element_text(size = 20),
+         axis.text.y = element_blank(),axis.ticks.y = element_blank(),
+         axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
+         plot.title = element_text(hjust = 0.5),legend.position = "bottom",
+         legend.text = element_text(size=20))
+ggsave(filename = paste0("images/",unique(kn_it$country),".jpg"), width = 20, height = 30)
+
 kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
                           target = "right")
 kn_de$country <- "Germany"
 
-kn_tot <- rbind(kn_it,kn_de)
-
-textplot_keyness(kn_de, n = 20, margin = 0.1,
+pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
                  labelsize = 10, color = c("black","grey")) +
   ylab(kn_de$country) +
   xlab(expression(chi^2)) +
@@ -560,14 +675,12 @@ textplot_keyness(kn_de, n = 20, margin = 0.1,
         legend.text = element_text(size=20))
 ggsave(filename = paste0("images/",unique(kn_de$country),".jpg"), width = 20, height = 30)
 
-ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+# kn_tot <- rbind(kn_it,kn_de)
+
+kntot <- ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
 ggsave(filename = "images/kntot.jpg", width = 22, height = 30)
 
 # ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
-
-
-
-
 
 # NO tk_df (co-occurrence) ITA, document ####
 
@@ -982,10 +1095,10 @@ kn_sen_de <- kn_sen_de %>% filter(feature %in% c("wirtschaft","geschäftsführer
 kn_sen_de_pl
 kn_sen_it_pl
 
-textplot_keyness(kn_sen_de, 
+textplot_keyness(kn_sen_it, 
                  n = 20, margin = 0.1,
                  labelsize = 8, color = c("black","grey")) +
-  ylab(kn_sen_de$country) +
+  ylab(kn_sen_it$country) +
   xlab(expression(chi^2)) +
   theme_bw()  +
   theme( axis.title.y = element_text(size = 20),
@@ -993,7 +1106,7 @@ textplot_keyness(kn_sen_de,
          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
          legend.text = element_text(size=20))
-ggsave(filename = paste0("images/kn_senNO_",unique(kn_sen_de$country),".jpg"), width = 15, height = 13 ) # 8)
+ggsave(filename = paste0("images/kn_senNO_",unique(kn_sen_it$country),".jpg"), width = 15, height = 13 ) # 8)
 
 ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
 ggsave(filename = "images/knsen.jpg", width = 15, height = 13)
