@@ -31,13 +31,13 @@ setwd("C:/Users/rocpa/OneDrive/Desktop/CNT/zombie_firms/I_review/")
 
 ## to find regex (root words/combinations) of "zombie firms" terms
 
-df_word <- unique(stringr::str_extract_all(tx_sen$text,
-        regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* danneggiare \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*",
+df_word <- unique(stringr::str_extract_all(txdf$text,
+regex("\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* chiusura \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]* \\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:]*",
                                                  ignore_case = TRUE)))
 
 unique(unlist(df_word))
 
-checksen <- txdf %>% filter(str_detect(text,"\\bama\\b"))
+checksen <- txdf %>% filter(str_detect(text,"\\beuropean zentral bank\\b"))
 
 de_res <- unique(read.xls("zombiefirms.xls",sheet = "de_result2")[,1])
 de_res <- paste0("\\b",de_res,"\\b",collapse="|")
@@ -137,6 +137,9 @@ docnames(corpus_it08) <- paste(corpus_it08$abbrev, corpus_it08$id, sep="_")   # 
 # selection of journals of interest
 corpus_it08 <-  corpus_subset(corpus_it08,origin2 == "La Repubblica"|origin2 == "Corriere Sera"|origin2 == "Il Giornale"|origin2 == "Fatto Quotidiano") 
 
+# selection >= 2020
+corpus_it08 <- corpus_subset(corpus_it08,datet >= "2020-01-01")
+
 # clean out texts (outliers, out of context etc., commented)
 corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c( 
   # double similar
@@ -218,7 +221,7 @@ corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c(
   "CS_CORONL0020200706eg76000en" # startup Intesa San Paolo
 ))
 
-corpus_it08 <- corpus_subset(corpus_it08,datet >= "2020-01-01")
+
 
 # GERMANY PROCESSING ####
 
@@ -237,8 +240,10 @@ corpus_it08 <- corpus_subset(corpus_it08,datet >= "2020-01-01")
 # corpus_de08 <- corpus_de08 + corpus_faz
 # save(corpus_de08,file="corpus_de08full.Rdata")
 
-
 load("corpus_de08full.Rdata")
+corpus_de08 <- corpus_de08[!duplicated(docvars(corpus_de08)),]
+
+
 # bigrams, trigrams (not used) and variables
 bg <- pull(read.csv("de_bigrams_08.csv"),2)
 trg <- pull(read.csv("de_trigrams_08.csv"),2)
@@ -261,6 +266,9 @@ corpus_de08 <-  corpus_subset(corpus_de08,
                               origin2 == "Suddeutsche Zeitung" | origin2 == "Die Welt" |
                                 origin2 == "Die Zeit" | origin2 == "FAZ") 
 
+# filter >= 2020-01-01
+corpus_de08 <- corpus_subset(corpus_de08,datet >= "2020-01-01")
+
 # clean out texts (outliers, out of context etc., commented)
 corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c( 
                                     
@@ -280,9 +288,15 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
   "FZ_FD1202104276234436","FZ_FD1202108025000526464873", #
   # outlier length # too short
   "WT_WSONNT0020200816eg8g0001g",
+  "SZ_SDDZ000020210315eh3f0000c",
   # piece of information
   "WT_DWELT00020201124egbo0000t",
- # meaningless
+  "WT_WSONNT0020211009eha90000w",
+  "WT_DWELT00020200512eg5c00014",
+  "ZT_ZEITON0020200810eg8a0002t",
+  "ZT_ZEITON0020200919eg9j0002v",
+  "FZ_FD2202009046078725", # trend in bankruptcy
+ # out of context
  "ZT_DIEZEI0020200827eg8r0000t", # shortening work hours,
  "WT_WELTON0020201214egce000gb", # interview with banker on  general finance state, not limited covid
  "ZT_DIEZEI0020201119egbj0000m", # story-like dossier on receving credit loan
@@ -308,12 +322,14 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
  "WT_WSONNT0020200322eg3m00054" # lifestyle
 ))
 
+
+
 # 
 
 # clean corpus ####
 
-# corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
-  corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+ corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+ corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
 
 #  corpus_df <- corpus_reshape(corpus_df, to = "sentences")
 # corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
@@ -366,7 +382,6 @@ corpus_sen <- corpus(tx_sen)
 
 # compound terms
 compound_de <- c("europäische union","european zentral bank",
-                 # "zombie firma","zombie unternehmen","zombie firmen",
                  "deutschen banken", "jens ehrhardt",
                  "carsten dierig","paschal donohoe",
                  "lucas flöther","alexander herzog","flüchtlingswelle 2015",# "millionen kurzarbeiter",
@@ -391,8 +406,10 @@ compound_de <- c("europäische union","european zentral bank",
                "european zentral bank-chef"   , "european zentral bank-rates"               ,
                   "european zentral bank-geldschwemme" ,"european zentral bank-stresstests"     ,    
                   "european zentral bank-direktor"  , "european zentral bank-bankenaufsicht",
-               "finanzielle risiko"
-                 #
+               "finanzielle risiko",
+               "im rahmen",
+                 # keyness
+               "neue normalität" 
                  # "römermann fachanwalt"
                  )
 
@@ -403,7 +420,14 @@ bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende 
                      "millionen unternehmen entspricht", "bundesbank warnt",
                      #
                      "gewaltigen anzahl sogenannter zombieunternehmen führen angesichts",
-                     "leben erhalten schrieb michael hüther direktor"
+                     "leben erhalten schrieb michael hüther direktor",
+                     "großen stil angewandte kurzarbeit",
+                     "staat via kurzarbeit",
+                     "staatslöhnen genannt kurzarbeitergeld",
+                     "dank kurzarbeit überleben müsste stattdessen",
+                     "kurzarbeit weiterbestehen",
+                     "warnungen kurzarbeitergeld mäste"
+                     
                      ))]
 
 # terms to remove, from key-center co-occurrences
@@ -411,8 +435,8 @@ bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende 
 #terms to remove
 rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt","spiegel","f.a.z.","f.a.z",
             "faz","f.az","f a z","fa.z","welt","darf","schließlich",
-            "immer", "unternehmen","firmen","trotzdem" , "nämlich" ,  "nennt","zweiten","besser",
-            "immerhin",
+            "immer", "trotzdem" , "nämlich" ,  "nennt","zweiten","besser",
+            "immerhin", # "unternehmen","firmen",
             "schwer","rund","wegen","denen","sz","WELT AM SONNTAG",
             "später",
             "dass","zahl","prozent","viele","mehr","schon","sei","gibt","sagt","sagte","dabei","menschen","seien","diesmal",
@@ -443,10 +467,13 @@ rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt"
             # SEN 2
             "zusammenhang","hantzsch","gleich","gleichzeitig","deshalb","sogenannten",
             "zahlen", "beispiel_volker_römermann_fachanwalt" , "lassen", "analyse", # ,
-           "macht_daher_schon_länger"  ,
+           "macht_daher_schon_länger",
+           "im_rahmen",
+           "politik_unternehmen","runde",  "sogenannte"  ,
             # SEN
             "zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma","unternehmenszombies",
             "zombie_banken", "zombifizierung","zombie","zombiefirms", "entstehung_von_zombiefirms"
+           # "entstehen","oecd-definition", "spd-politiker" # ,"wort","neue"
 )
 
 
@@ -498,7 +525,6 @@ corpus_sen <- corpus(tx_sen)
 
 # txit$text <- stri_replace_all_fixed(txit$text, zombiefirm_pattern,  zombiefirm_replace, vectorize_all=FALSE)
 
-#### cmp ####
 compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
                   "cassa integrazione","cassa lavoro", "settore terziario", "settore turistico",
                   "unione europea","salva italia","decreto ristori","decreti ristoro",
@@ -564,8 +590,9 @@ compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società
                   "giro di carte",
                   "limite di indebitamento",
                   "mancanza di risorse","mancanza di liquidità","mancanza di consumi", "mancanza di interventi",
-                  "ragazzi di terza media","ragazzi del quartiere"
-                  # "tenere in vita"
+                  "ragazzi di terza media","ragazzi del quartiere",
+                  "presidente del consiglio","consiglio di amministrazione","cosiglio dei ministri"
+                  
                   )
 
 bg <- bg[!(bg %in% c("altman evidenzia poi","banca commerciale classis capital società"))]
@@ -601,9 +628,7 @@ rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","gr
            # 3rd round                                      # ,  # "prova","chiaro","imprese","luglio","agosto",# ,"intervento","rischio","terziario", "futuro", "italia"
             "stima","aumentare","roma","articolo","quantità","numeri","entro",
            "richiede","far","percorso",
-           "sempre" 
-           
-           #, "zia",
+           "sempre"  
         # TRY TO REMOVE: "aumento", "mondo"
            
          # "d_italia","imprese intervistate","ottenuto","città", "mondo",  "attesa","ultima","domanda","dire","tema","buono", "chiuso",
@@ -612,7 +637,7 @@ rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","gr
         #  "zombiefirms", "zombie",
         #  "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
         #  "zombiefirms","zombie",
-        # "troppe","tante","troppe","tante","passo","possono"
+        # "troppe","tante","troppe","tante","passo","possono","società"
 ) 
 
 
@@ -678,7 +703,7 @@ ggsave(filename = paste0("images/",unique(kn_de$country),".jpg"), width = 20, he
 # kn_tot <- rbind(kn_it,kn_de)
 
 kntot <- ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(filename = "images/kntot.jpg", width = 22, height = 30)
+ggsave(filename = "images/kntot.jpg", width = 20, height = 30)
 
 # ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
 
@@ -990,7 +1015,6 @@ co_occur_network_rt2$ref <- paste0(unique(corpus_df$country)," ","Right")
 # E(co_occur_network_rt)$weight <- count.multiple(co_occur_network_rt)
 # co_occur_network_rt <- simplify(co_occur_network_rt)
 
-
 # newtest to delete ####
 
 # df_rt <- dfm_subset(dfm_df,datet >= "2020-01-01" & rating == "right")
@@ -1037,7 +1061,7 @@ plot(co_occur_network_lf2,
      vertex.label.cex = 1.2,
      vertex.color = "grey",
    #  edge.width = (E(co_occur_network_lf)$weight / 4),
-   edge.width = E(co_occur_network_lf2)$weight,
+   edge.width = (E(co_occur_network_lf2)$weight / 1.5),
   # edge.label =  E(co_occur_network_lf)$weight,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombiefirms",2,1),
@@ -1061,7 +1085,7 @@ plot(co_occur_network_rt2,
      vertex.label.cex = 1.2,
      vertex.color = "grey",
      #  edge.width = (E(co_occur_network_rt)$weight / 4),
-     edge.width = E(co_occur_network_rt2)$weight,
+     edge.width = (E(co_occur_network_rt2)$weight / 1.5),
     #  edge.label =  E(co_occur_network_rt)$weight,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombiefirms",2,1),
@@ -1074,28 +1098,19 @@ title(co_occur_network_rt2$ref,cex.main=1.5)
 
 # Keyness zombie ####
 
-kn_sen_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
-                           target = "right")
-kn_sen_de$country <- unique(corpus_sen$country)
 
 kn_sen_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
                               target = "right")
 kn_sen_it$country <- unique(corpus_sen$country)
 
-kn_sen_de <- kn_sen_de %>% filter(feature %in% c("wirtschaft","geschäftsführer","insolvenzrecht","corona-hilfen","gefahr",
-                                               "bundesregierung","nullzinspolitik","geschäftspartner","bank",
-                                               "warnung","leben halten", "corona", "zukunft", "nicht_überlebensfähig", 
-                                               "pflicht","überleben", "kurzarbeit","analyse","ressourcen","recht",
-                                               "bundesbank",
-                                           "banche","credito_garantito","imprese","terziario","società","gestione","futuro",
-                                           "italia","debito","continua_erogazione",
-                                           "draghi","intervento","mercato","pioggia","urgenza","g30","ristori",
-                                           "in_piedi","risorse_pubbliche","lavoratori"))
+kn_sen_it <- kn_sen_it %>% filter(feature %in% c( "banca","imprese","gestione", "credito_garantito","chiusura",
+                                                 "debito","futuro","crediti",
+                                                 "draghi","ilva","alitalia","g30","danneggiare","intervento_pubblico",
+                                                 "politica_industriale","sostegno"
+))
 
-kn_sen_de_pl
-kn_sen_it_pl
 
-textplot_keyness(kn_sen_it, 
+kn_sen_it_pl <- textplot_keyness(kn_sen_it, 
                  n = 20, margin = 0.1,
                  labelsize = 8, color = c("black","grey")) +
   ylab(kn_sen_it$country) +
@@ -1108,8 +1123,34 @@ textplot_keyness(kn_sen_it,
          legend.text = element_text(size=20))
 ggsave(filename = paste0("images/kn_senNO_",unique(kn_sen_it$country),".jpg"), width = 15, height = 13 ) # 8)
 
+
+
+kn_sen_de <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
+                              target = "right")
+kn_sen_de$country <- unique(corpus_sen$country)
+
+kn_sen_de <- kn_sen_de %>% filter(feature %in% c("wirtschaft", "nullzinspolitik","niedrigzinsen","insolvenzanmeldung",
+                                                 "insolvenz", "geschäftspartner","creditreform","kapital",
+                                                 "überleben","nicht_überlebensfähig","leben_halten" ,
+                                                 "kurzarbeit","pflicht","künstlich","bundesbank","regierung"
+))
+
+
+kn_sen_de_pl <- textplot_keyness(kn_sen_de, 
+                 n = 20, margin = 0.1,
+                 labelsize = 8, color = c("black","grey")) +
+  ylab(kn_sen_de$country) +
+  xlab(expression(chi^2)) +
+  theme_bw()  +
+  theme( axis.title.y = element_text(size = 20),
+         axis.text.y = element_blank(),axis.ticks.y = element_blank(),
+         axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
+         plot.title = element_text(hjust = 0.5),legend.position = "bottom",
+         legend.text = element_text(size=20))
+ggsave(filename = paste0("images/kn_senNO_",unique(kn_sen_de$country),".jpg"), width = 22, height = 15 ) # 8)
+
 ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(filename = "images/knsen.jpg", width = 15, height = 13)
+ggsave(filename = "images/knsen.jpg", width = 22, height = 16)
 
 # 
 # zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3])
