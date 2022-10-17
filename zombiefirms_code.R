@@ -329,9 +329,9 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
 # clean corpus ####
 
  corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
- corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+# corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
 
-#  corpus_df <- corpus_reshape(corpus_df, to = "sentences")
+# corpus_df <- corpus_reshape(corpus_df, to = "sentences")
 # corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
 
 corpus_df <- tolower(corpus_df)
@@ -358,7 +358,7 @@ txdf <- convert(corpus_df, to = "data.frame")
 
 zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,1] # no lemmatized terms 
 zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
-zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,3] # lemmatized version #1
+zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,2] # lemmatized version #1
 names(zombiefirm_replace_de) <- zombiefirm_pattern_de
 txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_de,ignore_case = T))
 
@@ -366,17 +366,17 @@ corpus_df <- corpus(txdf)
 
 
 # de keyterm zombie
-
-zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "de_lemma")[,5]) # 1
-zombieterms <-  zombieterms[zombieterms != ""]
-zombieterms <- c(zombieterms,"zombie")
-zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
-
-tx_sen<- txdf %>% filter(str_detect(text,zombieterms))
-
-tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
-
-corpus_sen <- corpus(tx_sen)
+# 
+# zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "de_lemma")[,3]) # 1
+# zombieterms <-  zombieterms[zombieterms != ""]
+# zombieterms <- c(zombieterms,"zombie")
+# zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
+# 
+# tx_sen<- txdf %>% filter(str_detect(text,zombieterms))
+# 
+# tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
+# 
+# corpus_sen <- corpus(tx_sen)
 
 # 
 
@@ -469,18 +469,18 @@ rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt"
             "zahlen", "beispiel_volker_römermann_fachanwalt" , "lassen", "analyse", # ,
            "macht_daher_schon_länger",
            "im_rahmen",
-           "politik_unternehmen","runde",  "sogenannte"  ,
+           "politik_unternehmen","runde",  "sogenannte"  
             # SEN
-            "zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma","unternehmenszombies",
-            "zombie_banken", "zombifizierung","zombie","zombiefirms", "entstehung_von_zombiefirms"
-           # "entstehen","oecd-definition", "spd-politiker" # ,"wort","neue"
+          #   "zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma","unternehmenszombies",
+          #   "zombie_banken", "zombifizierung","zombie","zombiefirms", "entstehung_von_zombiefirms",
+          # "entstehen","oecd-definition", "spd-politiker" # ,"wort","neue"
 )
 
 
 
 
 # Document-term matrix
-dfm_df <-  tokens( corpus_sen,
+dfm_df <-  tokens( corpus_df,
                    remove_punct = TRUE,
                    remove_symbols = TRUE,
                    remove_separators = TRUE,
@@ -503,7 +503,7 @@ freq_stat <- textstat_frequency(dfm_df,groups = rating) %>%
 
 zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,1]
 zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b")
-zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3] #1
+zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,2] #1
 # zombiefirm_replace <- paste0("\\b",zombiefirm_replace,"\\b",collapse="|")
 names(zombiefirm_replace_it) <- zombiefirm_pattern_it
 txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_it,ignore_case = T))
@@ -511,7 +511,7 @@ txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_it,ignore_case =
 corpus_df <- corpus(txdf)
 
 # it keyterm zombie
-zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,5]) #1
+zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3]) #1
 zombieterms <-  zombieterms[zombieterms != ""]
 zombieterms <- c(zombieterms,"zombie")
 zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
@@ -706,150 +706,6 @@ kntot <- ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = 
 ggsave(filename = "images/kntot.jpg", width = 20, height = 30)
 
 # ggsave(file=paste0("images/knpl_",unique(dfm_df$country),".jpg"), width = 17, height = 14)
-
-# NO tk_df (co-occurrence) ITA, document ####
-
-# co-occurrences feature matrix Italy left
-# 
-# fcm_lfdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "left"),
-#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
-#                  remove_numbers = TRUE,remove_url = FALSE) %>%
-#   tokens_tolower() %>% 
-#   tokens_compound(phrase(c(compound_it,bg))) %>%
-#   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
-#   fcm(context = "window", window = 20) 
-# 
-# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-# # co-occurrence plot left
-# co_occur_network_lfdc <- graph_from_adjacency_matrix(fcm_lfdc, mode = "undirected", diag = FALSE ) # , weighted = T
-# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
-# 
-# E(co_occur_network_lfdc)$weight <- 1
-# co_occur_network_lfdc <- simplify(co_occur_network_lfdc, edge.attr.comb=list(weight="sum"))
-# 
-# # co_occur_network_lf <- simplify(co_occur_network_lf)
-# co_occur_network_lfdc$ref <- "Italy Left"
-# # tkplot for interactive networks (don't close while working on the code!)
-# # tk_lf <- tkplot(co_occur_network_lf)
-# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
-# 
-# lf_lg <- as_long_data_frame(co_occur_network_lfdc)
-# names(lf_lg)[names(lf_lg) == "ver[el[, 1], ]"] <- "from_term"
-# names(lf_lg)[names(lf_lg) == "ver2[el[, 2], ]"] <- "to_term"
-# 
-# frommplf <- lf_lg[lf_lg$from_term == "imprese_zombie",]
-# tomplf <- lf_lg[lf_lg$to_term == "imprese_zombie",]
-# totlf <- rbind(frommplf,tomplf)
-# totlf <- totlf[order(-totlf$weight),]
-# write.csv2(totlf,file="impz_itlf_win20.csv",row.names = F)
-# 
-# 
-# 
-# 
-# 
-# 
-# # Same procedure for Italy right
-# fcm_rtdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
-#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
-#                  remove_numbers = TRUE,remove_url = FALSE) %>%
-#   tokens_tolower() %>% 
-#   tokens_compound(phrase(c(compound_it,bg))) %>%
-#   tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
-#   fcm(context = "window", window = 20) 
-# 
-# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-# # co-occurrence plot left
-# co_occur_network_rtdc <- graph_from_adjacency_matrix(fcm_rtdc, mode = "undirected", diag = FALSE ) # , weighted = T
-# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
-# 
-# E(co_occur_network_rtdc)$weight <- 1
-# co_occur_network_rtdc <- simplify(co_occur_network_rtdc, edge.attr.comb=list(weight="sum"))
-# 
-# # co_occur_network_lf <- simplify(co_occur_network_lf)
-# co_occur_network_rtdc$ref <- "Italy Right"
-# # tkplot for interactive networks (don't close while working on the code!)
-# # tk_lf <- tkplot(co_occur_network_lf)
-# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
-# 
-# rt_lg <- as_long_data_frame(co_occur_network_rtdc)
-# names(rt_lg)[names(rt_lg) == "ver[el[, 1], ]"] <- "from_term"
-# names(rt_lg)[names(rt_lg) == "ver2[el[, 2], ]"] <- "to_term"
-# 
-# frommprt <- rt_lg[rt_lg$from_term == "imprese_zombie",]
-# tomprt <- rt_lg[rt_lg$to_term == "imprese_zombie",]
-# totrt <- rbind(frommprt,tomprt)
-# totrt <- totrt[order(-totrt$weight),]
-# write.csv2(totrt,file="impz_itrt_win20.csv",row.names = F)
-
-
-# NO tk_df (co-occurrence) DEU, document ####
-
-# fcm_lfdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
-#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
-#                  remove_numbers = TRUE,remove_url = FALSE) %>%
-#   tokens_tolower() %>% 
-#   tokens_compound(phrase(c(compound_de,bg))) %>%
-#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de))%>%
-#   fcm(context = "document") 
-# 
-# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-# # co-occurrence plot left
-# co_occur_network_lfdc <- graph_from_adjacency_matrix(fcm_lfdc, mode = "undirected", diag = FALSE ) # , weighted = T
-# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
-# 
-# E(co_occur_network_lfdc)$weight <- 1
-# co_occur_network_lfdc <- simplify(co_occur_network_lfdc, edge.attr.comb=list(weight="sum"))
-# 
-# # co_occur_network_lf <- simplify(co_occur_network_lf)
-# co_occur_network_lfdc$ref <- "Italy Left"
-# # tkplot for interactive networks (don't close while working on the code!)
-# # tk_lf <- tkplot(co_occur_network_lf)
-# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
-# 
-# lf_lg <- as_long_data_frame(co_occur_network_lfdc)
-# names(lf_lg)[names(lf_lg) == "ver[el[, 1], ]"] <- "from_term"
-# names(lf_lg)[names(lf_lg) == "ver2[el[, 2], ]"] <- "to_term"
-# 
-# frommplf <- lf_lg[lf_lg$from_term == "zombie_unternehmen",]
-# tomplf <- lf_lg[lf_lg$to_term == "zombie_unternehmen",]
-# totlf <- rbind(frommplf,tomplf)
-# totlf <- totlf[order(-totlf$weight),]
-# write.csv2(totlf,file="impz_delf_sen.csv",row.names = F)
-# 
-# # right Germany
-# 
-# fcm_rtdc <- tokens(corpus_subset(corpus_df,datet >= "2020-01-01" & rating == "right"),
-#                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
-#                  remove_numbers = TRUE,remove_url = FALSE) %>%
-#   tokens_tolower() %>% 
-#   tokens_compound(phrase(c(compound_de,bg))) %>%
-#   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>%
-#   fcm(context = "window",window = 20) 
-# 
-# # fctop_lf <- topfeatures(fcm_lf, 20) %>% names()
-# # co-occurrence plot left
-# co_occur_network_rtdc <- graph_from_adjacency_matrix(fcm_rtdc, mode = "undirected", diag = FALSE ) # , weighted = T
-# # E(co_occur_network_lf)$weight <- count.multiple(co_occur_network_lf)
-# 
-# E(co_occur_network_rtdc)$weight <- 1
-# co_occur_network_rtdc <- simplify(co_occur_network_rtdc, edge.attr.comb=list(weight="sum"))
-# 
-# # co_occur_network_lf <- simplify(co_occur_network_lf)
-# co_occur_network_rtdc$ref <- "Germany Right"
-# # tkplot for interactive networks (don't close while working on the code!)
-# # tk_lf <- tkplot(co_occur_network_lf)
-# # l_lf <- tkplot.getcoords(tk_lf) # take tk_lf coordination(s)
-# 
-# rt_lg <- as_long_data_frame(co_occur_network_rtdc)
-# names(rt_lg)[names(rt_lg) == "ver[el[, 1], ]"] <- "from_term"
-# names(rt_lg)[names(rt_lg) == "ver2[el[, 2], ]"] <- "to_term"
-# 
-# frommprt <- rt_lg[rt_lg$from_term == "zombie_unternehmen",]
-# tomprt <- rt_lg[rt_lg$to_term == "zombie_unternehmen",]
-# totrt <- rbind(frommprt,tomprt)
-# totrt <- totrt[order(-totrt$weight),]
-# write.csv2(totrt,file="impz_dert_win20.csv",row.names = F)
-
 
 
 # tk_df (co-occurrence) ITA, to be used in Co-occurrences section ####
@@ -1097,6 +953,359 @@ title(co_occur_network_rt2$ref,cex.main=1.5)
 
 
 # Keyness zombie ####
+
+
+# clean corpus ####
+
+# corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+
+ corpus_df <- corpus_reshape(corpus_df, to = "sentences")
+# corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
+
+corpus_df <- tolower(corpus_df)
+corpus_df <- gsub("'", " ",  corpus_df)
+corpus_df <- gsub("’", " ",  corpus_df)
+corpus_df <- gsub("‘", " ", corpus_df)
+corpus_df <- gsub("«", " ",  corpus_df)
+corpus_df <- gsub("»", " ",  corpus_df)
+corpus_df <- gsub("„"," ", corpus_df)
+corpus_df <- gsub("“"," ",corpus_df)
+corpus_df <- gsub("\"", " ",  corpus_df)
+corpus_df <- gsub("\n", " ", corpus_df)
+corpus_df <- gsub("\t", " ",  corpus_df)
+corpus_df <- gsub("\\s+", " ", corpus_df)
+
+# other file: corpus converted to corpus
+txdf <- convert(corpus_df, to = "data.frame")
+
+
+
+
+# lemmatization and back Germany (mainly zombiefirms) #### 
+# same for Italian corpus)
+
+zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,1] # no lemmatized terms 
+zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
+zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma")[,2] # lemmatized version #1
+names(zombiefirm_replace_de) <- zombiefirm_pattern_de
+txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_de,ignore_case = T))
+
+corpus_df <- corpus(txdf)
+
+
+# de keyterm zombie
+
+zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "de_lemma")[,3]) # 1
+zombieterms <-  zombieterms[zombieterms != ""]
+zombieterms <- c(zombieterms,"zombie")
+zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
+
+tx_sen<- txdf %>% filter(str_detect(text,zombieterms))
+
+tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
+
+corpus_sen <- corpus(tx_sen)
+
+# 
+
+# compound terms
+compound_de <- c("europäische union","european zentral bank",
+                 "deutschen banken", "jens ehrhardt",
+                 "carsten dierig","paschal donohoe",
+                 "lucas flöther","alexander herzog","flüchtlingswelle 2015",# "millionen kurzarbeiter",
+                 "ifo geschäftsklimaindex","insolvenzen abgewendet","jörg hofmann","mark schieritz",
+                 "stefan bratzel",	"isabel schnabel","jan roth","corona hilfen",
+                 "paul ziemiak","insolvenz tsunami","euro gruppe", "euro zone","billige geld",
+                 "sieben tage", "erreicht worden","corona-hilfen","corona-hilfe",
+                 #
+                 "märz 2020","im griff","in den griff","große koalition","große entrup",
+                 #SEN
+                 "nicht überlebensfähig","finanziellen risiko","swiss re","entstehung von zombiefirms",
+                 "in höhe von" ,
+                 "european zentral bank",  "european zentral bank-präsident"    ,       
+                 "european zentral bank-präsidenten", "european zentral bank-präsidentin"        , 
+                 "european zentral bank-geldpolitik" , "european zentral bank-politik"             ,
+                 "european zentral bank-zinspolitik" , "european zentral bank-chefbankenaufseher" , 
+                 "european zentral bank-rat" , "european zentral bank-direktorin"          ,
+                 "european zentral bank-veranstaltung" ,                  
+                 "european zentral bank-vizepräsident" ,"european zentral bank-präsidentschaft"   ,  
+                 "european zentral bank-direktoriumsmitglied","european zentral bank-ökonomen"    ,        
+                 "european zentral bank-chefökonom" ,"european zentral bank-maßnahmen"         ,  
+                 "european zentral bank-chef"   , "european zentral bank-rates"               ,
+                 "european zentral bank-geldschwemme" ,"european zentral bank-stresstests"     ,    
+                 "european zentral bank-direktor"  , "european zentral bank-bankenaufsicht",
+                 "finanzielle risiko",
+                 "im rahmen",
+                 # keyness
+                 "neue normalität" 
+)
+
+bg <- bg[!(bg %in% c("kommenden jahr","ersten halbjahr","gefahr dass","kommende jahr","vergangenen jahr",
+                     # SEN
+                     "nicht überlebensfähig seien","überlebensfähig seien","dass firmen","unternehmen geben",
+                     "bundesregierung züchtet","sagt hantzsch","warnungen kurzarbeitergeld mäste",
+                     "millionen unternehmen entspricht", "bundesbank warnt",
+                     #
+                     "gewaltigen anzahl sogenannter zombieunternehmen führen angesichts",
+                     "leben erhalten schrieb michael hüther direktor",
+                     "großen stil angewandte kurzarbeit",
+                     "staat via kurzarbeit",
+                     "staatslöhnen genannt kurzarbeitergeld",
+                     "dank kurzarbeit überleben müsste stattdessen",
+                     "kurzarbeit weiterbestehen",
+                     "warnungen kurzarbeitergeld mäste"
+                     
+))]
+
+# terms to remove, from key-center co-occurrences
+# rem_dekey <- read.xls("zombiefirms.xls",sheet = "rem_dekey")[,1]
+#terms to remove
+rem_de <- c("die welt","faz.net","die zeit","suddeutsche zeitung","handelsblatt","spiegel","f.a.z.","f.a.z",
+            "faz","f.az","f a z","fa.z","welt","darf","schließlich",
+            "immer", "trotzdem" , "nämlich" ,  "nennt","zweiten","besser",
+            "immerhin", # "unternehmen","firmen",
+            "schwer","rund","wegen","denen","sz","WELT AM SONNTAG",
+            "später",
+            "dass","zahl","prozent","viele","mehr","schon","sei","gibt","sagt","sagte","dabei","menschen","seien","diesmal",
+            "sitzen","darin","geht","seit","sogar","tun",
+            "komme", "kommst", "kommt", "kommen",
+            "muss","musst","muss","müssen","müsst","warum",
+            "soll","sollst","sollt","sollen", "sollt", "sollen",
+            "laut","jahr","ende","etwa","etwas","moglich", "allerdings","uhr","ezb","ab",
+            "kann","kannst","kann", "können", "könnt", "könnte","könnten","könne","fast",
+            "gut", "zudem", "eigentlich" , "weitere", "bisher", "weniger","iw","gar","hoch",
+            "allerdings",  "möglich","dafür", "wäre" ,"gerade" ,"jahren", "ja", "bereits", "derzeit","blick", # "rheinland-pfalz",
+            "anteil","daher","viertagewoche","sagen","sagt","anfang","gehen","gab","gab es","hochbahn","benex","tepco", # "zugbegleiter",
+            "passiert","lange","erst","macht","wären","hälfte","rede",
+            #
+            "quelle","sollten","heißt","längst","hatte","stellt","hätten","müssten",
+            "teil","sicht","sehen","besteht","sewing","dadurch","wohl","wann","hätte",
+            "jedoch","patrik-ludwig","viele_menschen",
+            #
+            "demnach","grund","somit","ersten","halbjahr","kommenden", "vergangenen",
+            "allein","dürften",
+            #
+            "instituts","aufgrund","tatsächlich",
+            "gemäß","gebe","halle","begriff","fall","vorjahr","zumindest", #"montag",
+            "haeusgen","kritisiert", "walter-borjans", "hervor",
+            "vielen","tut", #,
+            # CO-occurrence
+            "schnell","frage","beispiel","zeit","in_höhe_von", "folge","folgen",  #,  
+            # SEN 2
+            "zusammenhang","hantzsch","gleich","gleichzeitig","deshalb","sogenannten",
+            "zahlen", "beispiel_volker_römermann_fachanwalt" , "lassen", "analyse", # ,
+            "macht_daher_schon_länger",
+            "im_rahmen",
+            "politik_unternehmen","runde",  "sogenannte"  ,
+            # SEN
+              "zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma","unternehmenszombies",
+              "zombie_banken", "zombifizierung","zombie","zombiefirms", "entstehung_von_zombiefirms",
+            "entstehen","oecd-definition", "spd-politiker" # ,"wort","neue"
+)
+
+
+
+
+# Document-term matrix
+dfm_df <-  tokens( corpus_sen,
+                   remove_punct = TRUE,
+                   remove_symbols = TRUE,
+                   remove_separators = TRUE,
+                   remove_numbers = TRUE,
+                   remove_url = FALSE
+) %>%
+  tokens_tolower() %>% 
+  tokens_compound(phrase(c(compound_de,bg))) %>%
+  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de)) %>% # , rem_dekey)) %>% 
+  dfm()
+
+
+
+
+# keyness sentence-level ita
+
+
+corpus_df <- corpus_it08 # change corpus_it08 or corpus_de08
+# corpus_df <- corpus_de08 # change corpus_it08 or corpus_de08
+
+ corpus_df <- corpus_reshape(corpus_df, to = "sentences")
+# corpus_df <- corpus_reshape(corpus_df, to = "paragraph")
+
+corpus_df <- tolower(corpus_df)
+corpus_df <- gsub("'", " ",  corpus_df)
+corpus_df <- gsub("’", " ",  corpus_df)
+corpus_df <- gsub("‘", " ", corpus_df)
+corpus_df <- gsub("«", " ",  corpus_df)
+corpus_df <- gsub("»", " ",  corpus_df)
+corpus_df <- gsub("„"," ", corpus_df)
+corpus_df <- gsub("“"," ",corpus_df)
+corpus_df <- gsub("\"", " ",  corpus_df)
+corpus_df <- gsub("\n", " ", corpus_df)
+corpus_df <- gsub("\t", " ",  corpus_df)
+corpus_df <- gsub("\\s+", " ", corpus_df)
+
+# other file: corpus converted to corpus
+txdf <- convert(corpus_df, to = "data.frame")
+
+
+
+zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,1]
+zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b")
+zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "ita_lemma")[,2] #1
+# zombiefirm_replace <- paste0("\\b",zombiefirm_replace,"\\b",collapse="|")
+names(zombiefirm_replace_it) <- zombiefirm_pattern_it
+txdf$text <- str_replace_all(txdf$text,regex(zombiefirm_replace_it,ignore_case = T))
+
+corpus_df <- corpus(txdf)
+
+# it keyterm zombie
+zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "ita_lemma")[,3]) #1
+zombieterms <-  zombieterms[zombieterms != ""]
+zombieterms <- c(zombieterms,"zombie")
+zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
+
+tx_sen <- txdf %>% filter(str_detect(text,zombieterms))
+
+tx_sen <- tx_sen %>% filter(datet >= "2020-01-01")
+
+corpus_sen <- corpus(tx_sen)
+
+
+# txit$text <- stri_replace_all_fixed(txit$text, zombiefirm_pattern,  zombiefirm_replace, vectorize_all=FALSE)
+
+compound_it <- c( # "aziende zombie","imprese zombie","zombie company","società zombie","organizzazione zombie",
+  "cassa integrazione","cassa lavoro", "settore terziario", "settore turistico",
+  "unione europea","salva italia","decreto ristori","decreti ristoro",
+  "lotto di vaccini","istituto di credito","instituti di credito",
+  "piano nazionale","sistema produttivo","sistemi produttivi",
+  "rapporto finanziario","made in italy","tassi di interesse", "tasso di interesse",
+  "tassi d'interesse","tasso d'interesse","interessi economici","interesse economico",
+  "ambito finanziario","termini di resa","termini di interesse","ambito lavorativo",
+  "camera di commercio","ministero dello sviluppo economico","rapport eu",
+  "stati finanziari","stati di bilancio","sviluppo economico",
+  "Ferretti Group","Gruppo Ferretti","Ferretti Yachts",
+  "blocco dei licenziamenti","blocco licenziamenti", "blocco_dei_licenziamenti",
+  "blocco_licenziamenti",
+  "sistema economico","sistemi economici","sistema politico","sistemi politici",
+  "terzo trimestre",
+  "sistema politico","sistema sanitario","sistema democratico","sistema finanziario","sistema imprenditoriale",
+  "sistema educativo","sistema paese","sistema fiscale","sistema produttivo","sistema capitalistico",
+  "sistema produttivo","sistema economico","sistema bancario","sistema industriale",
+  "sistema creditizio",
+  "fine pandemia","fine della pandemia", "in piedi", "pioggia di soldi","alto rendimento","alto adige",
+  "posto di lavoro","posto lavoro", "crisi economica","crisi finanziaria","crisi del 2008",
+  "posti di lavoro","presidente del consiglio","a favore","piccole e medie imprese","piccole imprese",
+  "valore aggiunto", "riproduzione riservata",
+  # SEN,
+  "tenute in vita","emergenza sanitaria","flusso di credito","flusso di sussidi",
+  "banca italia","crisi post-covid","crisi economica","crisi finanziaria","crisi pandemica",
+  "crisi industriali","crisi politica","crisi di liquidità","crisi del lavoro","crisi finanziaria",
+  "crisi del governo","reddito di cittadinanza",
+  "situazione finanziaria","area euro", "miliardi di euro", "milioni di euro", "miliardi euro","milioni euro",
+  "tempo indeterminato","situazione finanziaria","situazione straordinaria","in grado",
+  "debito buono","debito cattivo", "in grado",  "fine della pandemia", "fine anno", "fine delle moratorie",
+  "fine della campagna vaccinale", "tenute in vita",
+  # 2nd round
+  "consiglio di sorveglianza","consiglio di amministrazione","consiglio di stato","consiglio di fabbrica",
+  "presidente del consiglio","presidente del parlamento","ex presidente del consiglio",
+  "associazione bancaria","associazione a delinquere","cassa depositi","cassa ordinaria","cassa covid",
+  "prestiti zombie","posizioni zombie","capitale umano","capitale produttivo","capitale ambientale",
+  "capitale immateriale","stato di emergenza","stato di necessità","fare i conti",
+  "mercato interno","mercato economico","mercato del lavoro", 
+  #3rd round
+  "ministro del lavoro","ministero del lavoro","banche italiane","banca d italia", 
+  "banca centrale","banche europee","economia di mercato","economia italiana","economia circolare",
+  "economia della conoscenza","economia agricola", "attività economiche","attività assicurative",
+  "attività produttive", "beni e servizi","servizi di alloggio", "restano in vita",
+  "intervento pubblico","tenuto in vita","tenute in vita","ristori pubblici","ristori del governo",
+  "banca italia",
+  "film dell orrore", "aiuti di stato","stato di salute","stato di default",
+  #4th round
+  "business intelligence","economia reale","economia finanziaria","economia espansiva",
+  "distruzione creativa","creative destruction","fondo perduto", "gruppo ilva",
+  #5th round
+  "senza *","niente *",
+  "azione di governo","distribuzione dei dividendi","distribuzione della ricchezza","distribuzione del capitale",
+  "distribuzione di dividendi","distribuzione degli utili",
+  "sovranità monetaria","articolo 11","articolo 54","articolo 45","articolo 50",
+  "trasporto locale","trasporto aereo",
+  "segretario del tesoro","ministro del tesoro","segreteria al tesoro","tesoro pubblico",
+  # kn
+  "spese clientelari","gruppo intesa sanpaolo","gruppo cgbi","gruppo dei 30","gruppo dei trenta",
+  "gruppo roma capitale","gruppo bancario","gruppo marriot bonvoy",
+  "compagnia di bandiera","compagnie aeree",
+  "zero ore","interesse a zero","beni intermedi","beni pubblici","beni durevoli","beni di consumo",
+  "giro di carte",
+  "limite di indebitamento",
+  "mancanza di risorse","mancanza di liquidità","mancanza di consumi", "mancanza di interventi",
+  "ragazzi di terza media","ragazzi del quartiere",
+  "presidente del consiglio","consiglio di amministrazione","cosiglio dei ministri"
+  
+)
+
+bg <- bg[!(bg %in% c("altman evidenzia poi","banca commerciale classis capital società"))]
+
+
+
+rem_it <- c("fra","già?","già","oltre","ieri","può","soprattutto","molto","grandi","meno","tutto","tutti",
+            "c'é","c'e","state","essere","percentuale", "solo","parte","ne","cosa","fare",
+            "c’è","c ’è","c'è","c 'è","d", "avere","milano","torino","bologna","napoli","pisa","quindi",
+            "volta","veneto", "termini","fatto quotidiano","la repubblica","corriere della sera", "il giornale",
+            "il corrier","corriere","il fatto","https*","fatto_quotidiano","fatto_quotidiano","fatto","poi", "mai","prima",
+            "cento","gran_parte","gran* parte", #
+            "anni","soltanto","d accordo","d_accordo","circa","però",
+            "proprio","allora","fa","ciò","stata","qui","altra","vero","là","dopo","dare", 
+            "invece", "senso", "giorni","passato",
+            "addirittura", "base",  "poco", "alto","ora","ancora", "considera","posto",
+            "presenza", "tanto",  "tutte","sorta","fronte","causa","mentre","quando",
+            "fino","secondo","terzo", "mettere", "mesi", "altri","intervista",
+            "spiegato", "presentato","tratta","punto","seguito","caso","deciso", #
+            "modo","quali","quasi","cioè", "forse","stesso","certo","po","dichiarato","detto","oggi","particolare",
+            "altre","certo","almeno","infatti","quarto","pure","può_permettersi","considerata","trova",
+            "così", "proviene","stesso_periodo","quest_anno", # "meno_rispetto","così","cosiddette"
+            "numero","è_stato", "era_stato", "fosse_stato", "in_stato_di","credo","perciò" ,
+            "riproduzione_riservata","©",
+            #
+            "molte","sostenere","settore","rapporto","chiesto",
+            "anno", "fase_attuale","esistono", "informazioni_disponibili", 
+            "contano","creando",  "fine","tempo","situazione","momento","dati","grado" , "milioni","miliardi",
+            "in_grado","mondo", "dire",
+            "nemmeno","grazie",   #
+            # 2nd round
+            "imprese_intervistate", "ottenuto" , 
+            # 3rd round                                      # ,  # "prova","chiaro","imprese","luglio","agosto",# ,"intervento","rischio","terziario", "futuro", "italia"
+            "stima","aumentare","roma","articolo","quantità","numeri","entro",
+            "richiede","far","percorso",
+            "sempre"  ,
+            # TRY TO REMOVE: "aumento", "mondo"
+            
+            # "d_italia","imprese intervistate","ottenuto","città", "mondo",  "attesa","ultima","domanda","dire","tema","buono", "chiuso",
+            # "febbraio","giugno","chiusura","gennaio","aprile","novembre", "linea","mese","orrore", "aumentato",
+            # SEN,
+             "zombiefirms", "zombie",
+             "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
+             "zombiefirms","zombie",
+            "troppe","tante","troppe","tante","passo","possono","società"
+) 
+
+
+
+dfm_df <-  tokens( corpus_sen,
+                   remove_punct = TRUE,
+                   remove_symbols = TRUE,
+                   remove_separators = TRUE,
+                   remove_numbers = TRUE,
+                   remove_url = FALSE
+) %>%
+  tokens_tolower() %>% 
+  tokens_compound(phrase(c(compound_it,bg))) %>%
+  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+  dfm()
+
+
+
+
 
 
 kn_sen_it <- textstat_keyness(dfm_group(dfm_subset(dfm_df, datet >= "2020-01-01" ),groups = rating),
