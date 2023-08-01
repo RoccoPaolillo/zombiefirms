@@ -37,7 +37,7 @@ textstat_frequency(dfm_de) %>% subset(feature %in% "gefahr")
 
 test_term <- quanteda::convert(corpus_it08,to = "data.frame")
 unique(stringr::str_extract_all(test_term$text,
-   "\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:] aiutate \\-?[:alnum:]*\\-?[:alnum:]*\\b"))
+   "\\b[:alnum:]*\\-?[:alnum:]*\\-?[:alnum:] bassi \\-?[:alnum:]*\\-?[:alnum:]*\\b"))
 
 tt <- tx_de %>% filter(str_detect(text,"greensill"))
 
@@ -965,38 +965,84 @@ kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_de, datet >= "2020-01-01" ),g
                           target = "right")
 kn_de$country <- "Germany"
 
-pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
-                            labelsize = 10, color = c("black","grey")) +
-  ylab(kn_de$country) +
-  xlab(expression(chi^2)) +
-  theme_bw()  +
-  theme( axis.title.y = element_text(size = 20),
-         axis.text.y = element_blank(),axis.ticks.y = element_blank(),
-         axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
-         plot.title = element_text(hjust = 0.5),legend.position = "bottom",
-         legend.text = element_text(size=20))
-ggsave(pl_knde,file="images/kndefin.jpg",width = 20, height = 20)
+# pl_knde <- kn_de[c(1:20,11903:11922),] %>% mutate(feature = reorder(feature, chi2)) %>%
+#   mutate(refgrp = ifelse(chi2 < 0, "Left","Right")) %>%
+#   ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
+#   scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
+#                     name = "Political Leaning") + 
+#  # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
+#   xlab(expression(chi^2)) +
+#   theme_bw() +
+#   theme(axis.title.y = element_blank(), legend.position = "bottom")
 
-# Italian keyness
 kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_it, datet >= "2020-01-01" ),groups = rating),
-                 target = "right")
+                          target = "right")
 kn_it$country <-  "Italy"
 
-pl_knit <- textplot_keyness(kn_it, n = 20, margin = 0.1,
-                 labelsize = 10, color = c("black","grey")) +
-  ylab(kn_it$country) +
-  xlab(expression(chi^2)) +
-  theme_bw()  +
-  theme( axis.title.y = element_text(size = 20),
-         axis.text.y = element_blank(),axis.ticks.y = element_blank(),
-         axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
-         plot.title = element_text(hjust = 0.5),legend.position = "bottom",
-         legend.text = element_text(size=20)) 
-ggsave(filename = "images/pl_knit4.jpg", width = 20, height = 30)
+# pl_knit <- kn_it[c(1:20,12144:12164),] %>% mutate(feature = reorder(feature, chi2)) %>%
+#   mutate(refgrp = ifelse(chi2 < 0, "Left","Right")) %>%
+#   ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
+#   scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
+#                     name = "Political Leaning") + 
+#   # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
+#   xlab(expression(chi^2)) +
+#   theme_bw() +
+#   theme(axis.title.y = element_blank(), legend.position = "bottom")
 
 # Combining keyness from the two sample
-kntot <- ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(filename = "images/pl_knit1.jpg", width = 20, height = 30)
+
+kn_defig <- kn_de[c(1:20,11903:11922),]  %>% mutate(feature = reorder(feature, chi2)) %>%
+  mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
+kn_itfig <- kn_it[c(1:20,12144:12164),]  %>% mutate(feature = reorder(feature, chi2)) %>%
+  mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
+
+rbind(kn_defig,kn_itfig) %>%
+  ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
+  scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
+                    name = "Political Leaning") + 
+  # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
+  xlab(expression(chi^2)) + 
+  facet_wrap(~ country, scales = "free") +
+  theme_bw() +
+  theme(axis.title.y = element_blank(), legend.position = "bottom")
+ggsave(filename = "images/fig1.jpg", width = 6, height = 5)
+
+
+# kntot <- ggpubr::ggarrange(pl_knde,pl_knit,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
+# ggsave(filename = "images/fig1.jpg", width = 6, height = 9)
+
+
+
+# pl_knde <- textplot_keyness(kn_de, n = 20, margin = 0.1,
+#                             labelsize = 10, color = c("black","grey")) +
+#   ylab(kn_de$country) +
+#   xlab(expression(chi^2)) +
+#   theme_bw()  +
+#   theme( axis.title.y = element_text(size = 20),
+#          axis.text.y = element_blank(),axis.ticks.y = element_blank(),
+#          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
+#          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
+#          legend.text = element_text(size=20))
+# ggsave(pl_knde,file="images/kndefin.jpg",width = 20, height = 20)
+# 
+# # Italian keyness
+# kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_it, datet >= "2020-01-01" ),groups = rating),
+#                  target = "right")
+# kn_it$country <-  "Italy"
+# 
+# pl_knit <- textplot_keyness(kn_it, n = 20, margin = 0.1,
+#                  labelsize = 10, color = c("black","grey")) +
+#   ylab(kn_it$country) +
+#   xlab(expression(chi^2)) +
+#   theme_bw()  +
+#   theme( axis.title.y = element_text(size = 20),
+#          axis.text.y = element_blank(),axis.ticks.y = element_blank(),
+#          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
+#          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
+#          legend.text = element_text(size=20)) 
+# ggsave(filename = "images/pl_knitfin.jpg", width = 20, height = 30)
+
+
 
 # Germany: CO-OCCURRENCES NETWORKS ####
 # Co-occurrences were edited individually with code here, and editing of combined figure with external editor
@@ -1017,9 +1063,9 @@ nm_occ <- as.data.frame(names(V(co_occur_network_lf)))
 dg_occ <- as.data.frame(strength(co_occur_network_lf))
 df_occ <- cbind(nm_occ,dg_occ)
 df_occ <- df_occ[order(-strength(co_occur_network_lf)),]
-df_occ[1:30,]
+df_occ[1:13,]
 
-co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:30,1]),
+co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:13,1]),
                                                     mode = "undirected", diag = FALSE)
 
 
@@ -1038,9 +1084,12 @@ plot(co_occur_network_lf2,
      vertex.shape = "circle",
      vertex.label =  paste0(V(co_occur_network_lf2)$name),  
      vertex.label.color = "black",
-     vertex.label.cex = 1.2,
-     vertex.color = "grey", 
-     edge.width = (E(co_occur_network_lf2)$weight / 1.5),  
+     vertex.label.cex = 2,
+     vertex.color = "white", 
+    #  edge.color = co_occur_network_lf2$coll,
+     # edge.color = 4 * E(co_occur_network_lf2)$weight,
+   edge.width = (E(co_occur_network_lf2)$weight / 3),
+  #  edge.width = 2,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
@@ -1063,9 +1112,9 @@ nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
 dg_occrt <- as.data.frame(strength(co_occur_network_rt))
 df_occrt <- cbind(nm_occrt,dg_occrt)
 df_occrt <- df_occrt[order(-strength(co_occur_network_rt)),]
-df_occrt[1:30,]
+df_occrt[1:13,]
 
-co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:30,1]),
+co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:13,1]),
                                                     mode = "undirected", diag = FALSE)
 
 E(co_occur_network_rt2)$weight <- 1
@@ -1076,22 +1125,26 @@ tk_rt <- tkplot(co_occur_network_rt2) # manually modify layout
 l_rt <- tkplot.getcoords(tk_rt) # to take layout from tk_rt geo coordinate
 
 # plotting final graph, weights for editing
+
 par(mar = c(0, 0,1.3 , 0)) 
 plot(co_occur_network_rt2,
      layout = l_rt,
-     vertex.size = (strength(co_occur_network_rt2) / max(strength(co_occur_network_rt2)) * 20) ,
+     vertex.size = ( strength(co_occur_network_rt2) / max(strength(co_occur_network_rt2)) * 20),
      vertex.shape = "circle",
      vertex.label =  paste0(V(co_occur_network_rt2)$name),  
      vertex.label.color = "black",
-     vertex.label.cex = 1.2,
-     vertex.color = "grey",
-     edge.width = (E(co_occur_network_rt2)$weight / 1.5),
+     vertex.label.cex = 2,
+     vertex.color = "white", 
+     #  edge.color = co_occur_network_rt2$coll,
+     # edge.color = 4 * E(co_occur_network_rt2)$weight,
+     edge.width = (E(co_occur_network_rt2)$weight / 3),
+    # edge.width = 2,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
      
 )
-title(co_occur_network_rt2$ref,cex.main=1.5)
+title(co_occur_network_rt2$ref,cex.main= 1.5)
 
 # Italy: CO-OCCURRENCES NETWORKS ####
 
@@ -1110,9 +1163,9 @@ nm_occ <- as.data.frame(names(V(co_occur_network_lf)))
 dg_occ <- as.data.frame(strength(co_occur_network_lf))
 df_occ <- cbind(nm_occ,dg_occ)
 df_occ <- df_occ[order(-strength(co_occur_network_lf)),]
-df_occ[1:30,]
+df_occ[1:13,]
 
-co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:30,1]),
+co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern = df_occ[1:13,1]),
                                                     mode = "undirected", diag = FALSE)
 
 
@@ -1131,9 +1184,9 @@ plot(co_occur_network_lf2,
      vertex.shape = "circle",
      vertex.label =  paste0(V(co_occur_network_lf2)$name), 
      vertex.label.color = "black",
-     vertex.label.cex = 1.2,
-     vertex.color = "grey",
-     edge.width = (E(co_occur_network_lf2)$weight / 1.5),
+     vertex.label.cex = 2,
+     vertex.color = "white",
+     edge.width = (E(co_occur_network_lf2)$weight / 3),
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
@@ -1156,9 +1209,9 @@ nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
 dg_occrt <- as.data.frame(strength(co_occur_network_rt))
 df_occrt <- cbind(nm_occrt,dg_occrt)
 df_occrt <- df_occrt[order(-strength(co_occur_network_rt)),]
-df_occrt[1:30,]
+df_occrt[1:13,]
 
-co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:30,1]),
+co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern = df_occrt[1:13,1]),
                                                     mode = "undirected", diag = FALSE)
 
 
@@ -1178,9 +1231,9 @@ plot(co_occur_network_rt2,
      vertex.shape = "circle",
      vertex.label =  paste0(V(co_occur_network_rt2)$name),  
      vertex.label.color = "black",
-     vertex.label.cex = 1.2,
-     vertex.color = "grey", 
-     edge.width = (E(co_occur_network_rt2)$weight / 1.5), 
+     vertex.label.cex = 2,
+     vertex.color = "white", 
+     edge.width = (E(co_occur_network_rt2)$weight / 3), 
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
@@ -1345,12 +1398,18 @@ kn_sen_de$country <- unique(corpus_de_sen$country)
 
 
 # selecting terms for visualization, hierarchy kept, terms selected have same rank of ones filtered out
-kn_sen_de <- kn_sen_de %>% filter(feature %in% c("wirtschaft", "nullzinspolitik","niedrigzinsen","insolvenzanmeldung",
-                                                 "bank","insolvenz", "geschäftspartner", "creditreform", "kapital",
-                                                 "überleben","nicht_überlebensfähig","leben_halten" ,
-                                                 "kurzarbeit","pflicht","künstlich","bundesbank","regierung",
-                                                 "deutschen_bank", "risiko"
-))
+kn_sen_de <- kn_sen_de %>% filter(feature %in% c("geschäftsführer","nullzinspolitik","niedrigen_zinsen","kapital", #right
+                                      "insolvenzantragspflicht","wirtschaftsauskunftei_creditreform",
+                                      "gesamtwirtschaftlichen","produktivität", 
+                                      "warnen","nicht_überlebensfähig", "leben_halten","arbeitslosigkeit", # left
+                                      "schulden","pleite","bezahlen","kritik")
+                                    
+                    #old            # c("wirtschaft", "nullzinspolitik","niedrigzinsen","insolvenzanmeldung",
+                                    #              "bank","insolvenz", "geschäftspartner", "creditreform", "kapital",
+                                    #              "überleben","nicht_überlebensfähig","leben_halten" ,
+                                    #              "kurzarbeit","pflicht","künstlich","bundesbank","regierung",
+                                    #              "deutschen_bank", "risiko"
+)
 
 kn_sen_de %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right")) %>%
@@ -1363,8 +1422,8 @@ kn_sen_de %>% mutate(feature = reorder(feature, chi2)) %>%
   theme(axis.title.y = element_blank(), legend.position = "bottom")
 
 # 
-kn_sen_de_pl <- textplot_keyness(kn_sen_de,
-                              n = 20, margin = 0.1,
+textplot_keyness(kn_sen_de,
+                              margin = 0.1,
                                 labelsize = 8,
                                color = c("black","grey")) +
   ylab(kn_sen_de$country) +
@@ -1375,7 +1434,7 @@ kn_sen_de_pl <- textplot_keyness(kn_sen_de,
          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
          legend.text = element_text(size=20))
-# ggsave(kn_sen_de_pl,file="images/knsen8.jpg",width = 22, height = 18)
+ ggsave(file="images/knsenfin.jpg",width = 29, height = 14)
 
 # Italian analysis
 
@@ -1384,15 +1443,36 @@ kn_sen_it <- textstat_keyness(dfm_group(dfm_subset(dfm_it, datet >= "2020-01-01"
 kn_sen_it$country <- unique(corpus_it_sen$country)
 
 # selecting terms for visualization, hierarchy kept, terms selected have same rank of ones filtered out
-kn_sen_it <- kn_sen_it %>% filter(feature %in% c( "banca","imprese","gestione", "credito_garantito","chiusura",
-                                                 "debito","futuro","crediti",
-                                                 "draghi","ilva","alitalia","g30","danneggiare","intervento_pubblico",
-                                                 "politica_industriale","sostegno"
-))
+kn_sen_it <- kn_sen_it %>% filter(feature %in% c("imprese","banca","società","credito",
+                                                 "credito_garantito","gestione","debito","crediti", #right
+                                                 "alitalia","draghi","ilva","sopravvivere","intervento_pubblico",  #left 
+                                                   "politica_industriale","sostegno","danneggiare")
+                   # old  deleted   # c( "banca","imprese","gestione", "credito_garantito","chiusura",
+                                    #              "debito","futuro","crediti",
+                                    #              "draghi","ilva","alitalia","g30","danneggiare","intervento_pubblico",
+                                    #              "politica_industriale","sostegno" )
+                                    )
 
 
-kn_sen_it_pl <- textplot_keyness(kn_sen_it, 
-                 n = 20, margin = 0.1,
+rbind(kn_sen_it,kn_sen_de) %>% mutate(feature = reorder(feature, chi2)) %>%
+  mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))  %>% 
+  ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
+  scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
+                    name = "Political Leaning") + 
+  # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
+  xlab(expression(chi^2)) + 
+  facet_wrap(~ country, scales = "free",dir = "v") +
+  theme_bw() +
+  theme(axis.title.y = element_blank(), legend.position = "bottom")
+ggsave(filename = "images/fig2.jpg", width = 5, height = 5)
+
+
+
+
+
+
+textplot_keyness(kn_sen_it, 
+                 margin = 0.1,
                  labelsize = 8, color = c("black","grey")) +
   ylab(kn_sen_it$country) +
   xlab(expression(chi^2)) +
@@ -1402,7 +1482,7 @@ kn_sen_it_pl <- textplot_keyness(kn_sen_it,
          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
          legend.text = element_text(size=20))
-ggsave(filename = "images/knsenit6.jpg", width = 23, height = 30) #  width = 22, height = 16)
+ggsave(filename = "images/knsenitfin.jpg", width = 15, height = 14) #  width = 22, height = 16)
 
 # Combining figures
 ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
