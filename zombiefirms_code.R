@@ -39,7 +39,7 @@ setwd("")
 
 # UTILS FOR BACKGROUND DATA PROCESSING ######
 
-# to check if a term included in the document-feature matrix #####
+# to check if a term is included in the document-feature matrix #####
 
 textstat_frequency(dfm_de) %>% subset(feature %in% "europäische_zentralbank")
 
@@ -77,9 +77,6 @@ trigrams_filtered  <- trigrams_filtered %>%  dplyr::count(word1, word2,word3, so
 trigrams_united  <- trigrams_filtered  %>% unite(trigram, word1, word2,word3, sep = " ")
 # trigrams_united <- trigrams_united$trigram
 trigrams_united <- unique(trigrams_united)
-# 
-# write.csv(trigrams_united,"trigrams_definal.csv",row.names= F)
-
 
 
 # SEARCH STRATEGY ####
@@ -419,8 +416,6 @@ trigrams_filtered  <- trigrams_filtered %>%  dplyr::count(word1, word2,word3, so
 trigrams_united  <- trigrams_filtered  %>% unite(trigram, word1, word2,word3, sep = " ")
 # trigrams_united <- trigrams_united$trigram
 trigrams_united <- unique(trigrams_united)
-# 
-# write.csv(trigrams_united,"trigramsnew.csv",row.names= F)
 
 
 
@@ -968,7 +963,7 @@ dfm_it <-  tokens( corpus_it08,
 
 
 # KEYNESS CORPUS-LEVEL ####
-# Two different corpora where run for Italian and German corpus in order to combine for visualization
+# Two different corpora were run for Italian and German corpus in order to combine for visualization
 
 # German keyness
 kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_de, datet >= "2020-01-01" ),groups = rating),
@@ -991,7 +986,6 @@ rbind(kn_defig,kn_itfig) %>%
   ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
   scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
                     name = "Political Leaning") + 
-  # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
   xlab(expression(chi^2)) + 
   facet_wrap(~ country, scales = "free") +
   theme_bw() +
@@ -1000,7 +994,7 @@ ggsave(filename = "images/fig1.jpg", width = 4.5, height = 5) # 6 5
 
 
 # Germany: CO-OCCURRENCES NETWORKS ####
-# Co-occurrences were edited individually for each country with the following code. The editing of combined figure with external editor
+# Co-occurrences were edited individually for each country with the following code. Figures were combined with external editor
 
 # Left Germany
 fcm_lf <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "left"),
@@ -1041,10 +1035,7 @@ plot(co_occur_network_lf2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-    #  edge.color = co_occur_network_lf2$coll,
-     # edge.color = 4 * E(co_occur_network_lf2)$weight,
    edge.width = (E(co_occur_network_lf2)$weight / 3),
-  #  edge.width = 2,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
@@ -1090,10 +1081,7 @@ plot(co_occur_network_rt2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-     #  edge.color = co_occur_network_rt2$coll,
-     # edge.color = 4 * E(co_occur_network_rt2)$weight,
      edge.width = (E(co_occur_network_rt2)$weight / 3),
-    # edge.width = 2,
      layout=layout.circle,
      vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
      vertex.label.dist = 1.2
@@ -1265,8 +1253,7 @@ dfm_de <-  tokens( corpus_de_sen,
 # tokens_compound(phrase(c(bg_de))) %>%
   tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de,
                   "zombie_firms","zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma", # specific to sentence level
-                  "unternehmenszombies", "zombie_banken", "zombifizierung","zombie","zombiefirms" # ,
-                  # "entstehen","oecd-definition", "spd-politiker"
+                  "unternehmenszombies", "zombie_banken", "zombifizierung","zombie","zombiefirms"
                   )) %>% 
   dfm()
 
@@ -1313,7 +1300,7 @@ tx_it$text <- str_replace_all(tx_it$text,zombiefirm_removerpl_it)
 rem_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,2]
 rem_it <- unique(rem_it)
 
-# corpus_it08 <- corpus(tx_it)
+corpus_it08 <- corpus(tx_it)
 
 # selecting sentence-level
 zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "it_lemma")[,3]) # selecting terms
@@ -1379,16 +1366,11 @@ rbind(kn_sen_it,kn_sen_de) %>% mutate(feature = reorder(feature, chi2)) %>%
   ggplot(aes(x = chi2, y = feature, fill = refgrp)) + geom_col() +
   scale_fill_manual(values = c("Left" =  "grey","Right" = "black"),
                     name = "Political Leaning") + 
-  # scale_x_continuous(breaks = c(min(kn_sen_de$chi2), -2.96790,0.30648,max(kn_sen_de$chi2))) +
   xlab(expression(chi^2)) + 
   facet_wrap(~ country, scales = "free",dir = "v") +
   theme_bw() +
   theme(axis.title.y = element_blank(), legend.position = "bottom")
 ggsave(filename = "images/fig2.jpg", width = 5, height = 6)
-
-
-
-
 
 
 textplot_keyness(kn_sen_it, 
@@ -1402,11 +1384,10 @@ textplot_keyness(kn_sen_it,
          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
          legend.text = element_text(size=20))
-# ggsave(filename = "images/knsenitfin.jpg", width = 15, height = 14) #  width = 22, height = 16)
+ggsave(filename = "images/knsenitfin.jpg", width = 15, height = 14)
 
 # Combining figures
 ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-# ggsave(filename = "images/knsentoto.jpg", width = 23, height = 30) #  width = 22, height = 16)
 
 
 # Qualitative analyses ####
