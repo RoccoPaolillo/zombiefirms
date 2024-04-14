@@ -5,3 +5,4 @@ Hilmar, Till, Rocco Paolillo & Patrick Sachweh (forthcoming). Contagious economi
 
 Project: Corona Crisis Narratives - Framing Economic Imaginaries post-2020 (CoroNarrate) \
 Funded by the Volkswagen Foundation
+Universität Bremen (SOCIUM)
