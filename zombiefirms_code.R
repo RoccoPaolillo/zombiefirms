@@ -25,13 +25,14 @@ library(tm)
 library(tm.plugin.factiva)
 library(RNewsflow)
 
+# Original data cannot be shared. We refer to the name of originated files processed.
 # set working directory
 # upload of files might vary depending on folders allocation or users' settings
 
-setwd("C:/Users/rocpa/OneDrive/Desktop/CNT/zombie_firms/II_review/zombiefirms-gh")
+setwd("")
 
 # DATA COLLECTION INFORMATION ######
-# Check if term included in dfm #####
+# Util to check if term included in dfm #####
 #textfreq <- textstat_frequency(dfm_it)
 textstat_frequency(dfm_de) %>% subset(feature %in% "europäische_zentralbank")
 
@@ -81,7 +82,7 @@ write.csv(trigrams_united,"trigrams_definal.csv",row.names= F)
 # Screening of newspaper articles: mentioning zombiefirms terms and covid terms. See cleanout texts for exclusion criteria
 # Corpora with saved documents can not be shared for legal reasons. 
 # Section "Germany collection raw data" and "Italy collection raw data" are for informative purpose on how raw data were collected
-# Data analysis starts from UPLOAD GERMAN COPRUS
+# Data analysis starts from UPLOAD GERMAN CORPUS
 
 # Germany collection raw data (ignore) #####
 
