@@ -26,7 +26,7 @@ library(tm.plugin.factiva)
 library(RNewsflow)
 
 # Original data cannot be shared. We refer to the name of the originated files processed.
-# The code runs equally for German and Italian corpora, except where specified. Code can report either of the countries' documents to facilitate examples.
+# The code runs equally for the German and the Italian corpora, except where specified. Code here can report either of the countries' documents to facilitate examples.
 # corpus_de08 = German corpus
 # corpus_it08 = Italian corpus
 # dfm_de = German document-feature matrix
@@ -86,7 +86,7 @@ trigrams_united <- unique(trigrams_united)
 # Screening of newspaper articles: mentioning zombiefirms terms and covid terms. See cleanout texts for exclusion criteria
 # Corpora with saved documents can not be shared because of legal agreeements 
 # Section "Germany collection raw data" and "Italy collection raw data" are for informative purpose on how raw data were collected
-# Data analysis starts from UPLOAD GERMAN CORPUS
+# Data analysis starts from DATA ANALYSIS
 
 # Germany collection raw data (ignore) #####
 
@@ -101,9 +101,9 @@ raw_list <- lapply(source_list,Corpus,list(language = NA))
 
 n <- length(raw_list) 
 
-# to check the number of list's element. This is to arrange number of within brakets below
+# to check the number of the list's elements. This is to arrange the number within the brackets below
 
-# Vector with all elements of nested list. To avoid writing each element
+# Vector with all elements of the nested list. To avoid writing each element
 corpus_vector <- c(raw_list[[	1	]],
                    raw_list[[	2	]],
                    raw_list[[	3	]],
@@ -140,7 +140,7 @@ corpus_vector <- c(raw_list[[	1	]],
 
 
 
-# HERE the final CORPUS (comprising the corpus of all documents) is done.
+# HERE the final CORPUS for Germany (comprising the corpus of all documents) is done.
 
 # transformation ortographic punctuation
 
@@ -433,10 +433,10 @@ source_list <- lapply(filenames,FactivaSource)
 # last Factiva passage for each document
 raw_list <- lapply(source_list,Corpus,list(language = NA))
 
-# to check the number of list's element. This is to arrange number of within brakets below
+# to check the number of the list's elements. This is to arrange the number within the brackets below
 n <- length(raw_list) 
 
-# Vector with all elements of nested list. To avoid writing each element
+# Vector with all elements of the nested list. To avoid writing each element
 corpus_vector <- c(raw_list[[	1	]],
                    raw_list[[	2	]],
                    raw_list[[	3	]],
@@ -481,7 +481,7 @@ corpus_vector <- c(raw_list[[	1	]],
 
 
 
-# HERE the final CORPUS (comprising corpus of all documents) is done.
+# HERE the final CORPUS for Italy (comprising corpus of all documents) is done.
                                                           
 # transformation ortographic punctuation
                                                           
@@ -651,13 +651,13 @@ corpus_it08 <- corpus_it
 save(corpus_it08,file = "corpus_it08orig.Rdata")
 
 
-####
+#### DATA ANALYSIS
 
-## UPLOAD GERMAN CORPUS to use for all analysis #####
+## UPLOAD GERMAN CORPUS to use for all analysis for Germany #####
 # upload for either keyness corpus-level & co-occurrences networks or keyness sentence-level
 
 load("corpus_de08full.Rdata")
-corpus_de08 <- corpus_de08[!duplicated(docvars(corpus_de08)),] # for duplicates
+corpus_de08 <- corpus_de08[!duplicated(docvars(corpus_de08)),] # delete duplicates
 
 
 
@@ -714,7 +714,7 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
   # out of context
   "ZT_DIEZEI0020200827eg8r0000t", # shortening work hours,
   "WT_WELTON0020201214egce000gb", # interview with banker on  general finance state, not limited covid
-  "ZT_DIEZEI0020201119egbj0000m", # story-like dossier on receving credit loan
+  "ZT_DIEZEI0020201119egbj0000m", # story-like dossier on receiving credit loan
   "FZ_FD1202007116039759", # interview to min. economy Peter Altmaier at time, out of context
   "WT_WELTON0020200427eg4q00005" , # history out of context
   "WT_WELTON0020200712eg7c0005l", # abroad enterprises
@@ -737,7 +737,7 @@ corpus_de08 <- corpus_subset(corpus_de08, !docnames(corpus_de08) %in% c(
   "WT_WSONNT0020200322eg3m00054" # lifestyle
 ))
 
-# Germany: corpus preparation for KEYNESS CORPUS-LEVEL AND CO-OCCURRENCES NETWORKS anlysis ####
+# Germany: corpus preparation for KEYNESS CORPUS-LEVEL AND CO-OCCURRENCES NETWORKS analysis ####
 
 corpus_de08 <- tolower(corpus_de08)
 corpus_de08 <- gsub("'", " ",  corpus_de08)
@@ -797,11 +797,11 @@ dfm_de <-  tokens( corpus_de08,
 
 
 
-## UPLOAD ITALIAN CORPUS to use for all analysis #####
+## UPLOAD ITALIAN CORPUS to use for all analysis for Italy #####
 # upload for either keyness corpus-level & co-occurrences networks or keyness sentence-level
 
 load("corpus_it08orig.Rdata")
-corpus_it08 <- corpus_it08[!duplicated(docvars(corpus_it08)),] # for duplicates
+corpus_it08 <- corpus_it08[!duplicated(docvars(corpus_it08)),] # delete duplicates
 
 
 corpus_it08$country <- "Italy"
@@ -963,7 +963,7 @@ dfm_it <-  tokens( corpus_it08,
 
 
 # KEYNESS CORPUS-LEVEL ####
-# Two different corpora were run for Italian and German corpus in order to combine for visualization
+# Two different corpora were run for Italian and German corpus to be combined for visualization
 
 # German keyness
 kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_de, datet >= "2020-01-01" ),groups = rating),
@@ -994,7 +994,7 @@ ggsave(filename = "images/fig1.jpg", width = 4.5, height = 5) # 6 5
 
 
 # Germany: CO-OCCURRENCES NETWORKS ####
-# Co-occurrences were edited individually for each country with the following code. Figures were combined with external editor
+# Co-occurrences were edited individually for each country with the following code. Figures were combined with an external editor
 
 # Left Germany
 fcm_lf <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "left"),
@@ -1053,7 +1053,7 @@ fcm_rt <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "ri
   fcm(context = "window", window = 20, tri = FALSE)  # 20 words window unit
 
 # degree centrality (plotting undirected network), selecting top 30 words
-co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE) # , weighted = T
+co_occur_network_rt <- graph_from_adjacency_matrix(fcm_rt, mode = "undirected", diag = FALSE) 
 nm_occrt <- as.data.frame(names(V(co_occur_network_rt)))
 dg_occrt <- as.data.frame(strength(co_occur_network_rt))
 df_occrt <- cbind(nm_occrt,dg_occrt)
