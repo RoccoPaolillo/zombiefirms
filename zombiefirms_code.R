@@ -752,7 +752,6 @@ tx_de <- convert(corpus_de08, to = "data.frame")
 
 
 # bigram and variables annotation
-# bg_de <- pull(read.csv("de_bigrams_08.csv"),2) # from previous automation process on whole corpus
 bg_de <- read.xls("zombiefirms.xls",sheet = "de_bg", encoding = "latin1")[,1]
 bg_denot <- read.xls("zombiefirms.xls",sheet = "de_bgnot", encoding = "latin1")[,1]
 bg_de <- bg_de[! bg_de %in% bg_denot]
