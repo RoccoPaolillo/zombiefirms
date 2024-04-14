@@ -25,15 +25,22 @@ library(tm)
 library(tm.plugin.factiva)
 library(RNewsflow)
 
-# Original data cannot be shared. We refer to the name of originated files processed.
-# set working directory
-# upload of files might vary depending on folders allocation or users' settings
+# Original data cannot be shared. We refer to the name of the originated files processed.
+# The code runs equally for German and Italian corpora, except where specified. Code can report either of the countries' documents to facilitate examples.
+# corpus_de08 = German corpus
+# corpus_it08 = Italian corpus
+# dfm_de = German document-feature matrix
+# dfm_it = Italian document-feature matrix
+# tx_de = German data-frame processed data
+# tx_it = Italian data-frame processed data
 
+# set working directory
 setwd("")
 
-# DATA COLLECTION INFORMATION ######
-# Util to check if term included in dfm #####
-#textfreq <- textstat_frequency(dfm_it)
+# UTILS FOR BACKGROUND DATA PROCESSING ######
+
+# to check if a term included in the document-feature matrix #####
+
 textstat_frequency(dfm_de) %>% subset(feature %in% "europäische_zentralbank")
 
 test_term <- quanteda::convert(corpus_de08,to = "data.frame")
@@ -71,16 +78,16 @@ trigrams_united  <- trigrams_filtered  %>% unite(trigram, word1, word2,word3, se
 # trigrams_united <- trigrams_united$trigram
 trigrams_united <- unique(trigrams_united)
 # 
-write.csv(trigrams_united,"trigrams_definal.csv",row.names= F)
+# write.csv(trigrams_united,"trigrams_definal.csv",row.names= F)
 
 
 
-# Search strategy ####
+# SEARCH STRATEGY ####
 # German keywords: zombieunternehmen, zombiefirma, zombiefirmen, zombie firm, zombie firms, zombie-firma, zombie-firmen, zombie-unternehmen, zombie company, zombie companies, zombi-firma, zombi-firmen, zombi-unternehmen,industrie zombie ,industrien zombie ,industrie zoombie ,industrien zoombie ,industrie zombi ,industrien zombi ,industrie-zombie , industrien-zombie ,industrie-zoombie ,industrien-zoombie ,industrie-zombi ,industrien-zombi ,industriezombie ,industrienzombie ,industriezoombie ,industrienzoombie ,industriezombi ,industrienzombi, insolvenzantragspflicht
 # Italian keywords: aziende zombie, azienda zombie, azienda zombi, aziende zombi, impresa zombie, impresa zombi, imprese zombie, impresa zombi, zombie company, zombie companies, zombi company, zombi companies, società zombie, oranizzazione zombie, organizzazione zombi, organizzazioni zombie, organizzazioni zombi, attività zombie , attività zoombie , attività zombi ,attività-zombie ,attività-zoombie ,attività-zombi ,attivitá zombie ,attivitá zoombie ,attivitá zombi ,attivitá-zombie ,attivitá-zoombie ,attivitá-zombi, industrie decotte, industria decotta, azienda decotta, aziende decotte, compagnia decotta, compagnie decotte, società decotta, organizzazione decotta, organizzazioni decotte
 # Source: Factiva database, personal newspapers subscription, newspaper's trade agreement
 # Screening of newspaper articles: mentioning zombiefirms terms and covid terms. See cleanout texts for exclusion criteria
-# Corpora with saved documents can not be shared for legal reasons. 
+# Corpora with saved documents can not be shared because of legal agreeements 
 # Section "Germany collection raw data" and "Italy collection raw data" are for informative purpose on how raw data were collected
 # Data analysis starts from UPLOAD GERMAN CORPUS
 
@@ -136,7 +143,8 @@ corpus_vector <- c(raw_list[[	1	]],
 
 
 
-# Here the final CORPUS (comprising corpus of all documents) is done. Second line is to avoid duplicates later
+# HERE the final CORPUS (comprising the corpus of all documents) is done.
+
 # transformation ortographic punctuation
 
 corpus_vector <- tm_map(corpus_vector,content_transformer(function(x,pattern) str_replace_all(x,"'"," ")))
@@ -148,7 +156,7 @@ corpus_vector <- tm_map(corpus_vector,content_transformer(function(x,pattern) st
 # corpus composition
 corpus_de <- corpus(corpus_vector)
 
-# preparation for variables annotation
+# Preparation for variables annotation
 
 # variable: type of content
 de_content_business <- c("Automobil Industrie Online"	,
@@ -385,8 +393,8 @@ save(corpus_de08,file = "corpus_de08full.Rdata")
 
 # BIGRAM GERMANY
 
-
-
+tx_de <- convert(corpus_de08, to = "data.frame")
+                                                          
 bigrams_tx  <- tx_de %>%  unnest_tokens(bigram, text, token = "ngrams", n = 2)
 bigrams_tx  %>% dplyr::count(bigram, sort = TRUE)
 bigrams_separate  <- bigrams_tx  %>% separate(bigram,c("word1","word2"),sep=" ")
@@ -412,7 +420,7 @@ trigrams_united  <- trigrams_filtered  %>% unite(trigram, word1, word2,word3, se
 # trigrams_united <- trigrams_united$trigram
 trigrams_united <- unique(trigrams_united)
 # 
-write.csv(trigrams_united,"trigramsnew.csv",row.names= F)
+# write.csv(trigrams_united,"trigramsnew.csv",row.names= F)
 
 
 
@@ -478,8 +486,10 @@ corpus_vector <- c(raw_list[[	1	]],
 
 
 
-# Here the final CORPUS (comprising corpus of all documents) is done. Second line is to avoid duplicates later
+# HERE the final CORPUS (comprising corpus of all documents) is done.
+                                                          
 # transformation ortographic punctuation
+                                                          
 corpus_vector <- tm_map(corpus_vector,content_transformer(function(x,pattern) str_replace_all(x,"'"," ")))
 corpus_vector <- tm_map(corpus_vector,content_transformer(function(x,pattern) str_replace_all(x," ' "," ")))
 corpus_vector <- tm_map(corpus_vector,content_transformer(function(x,pattern) str_replace_all(x,"'''"," ")))
@@ -492,7 +502,7 @@ corpus_it <- corpus_it[!duplicated(docvars(corpus_it)),] # remove duplicates
 # variable date
 corpus_it$datet <- as_date(corpus_it$datetimestamp)
 
-# preparation for variables annotation
+# Preparation for variables annotation
 
 # variable: type of content
 it_content_business <- c("Assinews"	,
@@ -900,7 +910,7 @@ corpus_it08 <- corpus_subset(corpus_it08, !docnames( corpus_it08) %in% c(
 ))
 
 
-# Italy: corpus preparation for KEYNESS CORPUS-LEVEL AND CO-OCCURRENCES NETWORKS anlysis   ####
+# Italy: corpus preparation for KEYNESS CORPUS-LEVEL AND CO-OCCURRENCES NETWORKS analysis   ####
 
 corpus_it08 <- tolower(corpus_it08)
 corpus_it08 <- gsub("'", " ",  corpus_it08)
@@ -958,18 +968,19 @@ dfm_it <-  tokens( corpus_it08,
 
 
 # KEYNESS CORPUS-LEVEL ####
-# here two different corpora where run for Italian and German corpus in order to combine for visualization
+# Two different corpora where run for Italian and German corpus in order to combine for visualization
 
 # German keyness
 kn_de <- textstat_keyness(dfm_group(dfm_subset(dfm_de, datet >= "2020-01-01" ),groups = rating),
                           target = "right")
 kn_de$country <- "Germany"
 
+# Italian keyness
 kn_it <- textstat_keyness(dfm_group(dfm_subset(dfm_it, datet >= "2020-01-01" ),groups = rating),
                           target = "right")
 kn_it$country <-  "Italy"
 
-# Combining keyness from the two sample
+# Combining keyness from the two samples
 
 kn_defig <- kn_de[c(1:20,11903:11922),]  %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
@@ -989,7 +1000,7 @@ ggsave(filename = "images/fig1.jpg", width = 4.5, height = 5) # 6 5
 
 
 # Germany: CO-OCCURRENCES NETWORKS ####
-# Co-occurrences were edited individually with code here, and editing of combined figure with external editor
+# Co-occurrences were edited individually for each country with the following code. The editing of combined figure with external editor
 
 # Left Germany
 fcm_lf <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "left"),
@@ -1391,11 +1402,11 @@ textplot_keyness(kn_sen_it,
          axis.title.x = element_text(size = 20), axis.text.x = element_text(size = 15),
          plot.title = element_text(hjust = 0.5),legend.position = "bottom",
          legend.text = element_text(size=20))
-ggsave(filename = "images/knsenitfin.jpg", width = 15, height = 14) #  width = 22, height = 16)
+# ggsave(filename = "images/knsenitfin.jpg", width = 15, height = 14) #  width = 22, height = 16)
 
 # Combining figures
 ggpubr::ggarrange(kn_sen_de_pl,kn_sen_it_pl,ncol  =1, nrow  = 2, common.legend = T,legend = "bottom")
-ggsave(filename = "images/knsentoto.jpg", width = 23, height = 30) #  width = 22, height = 16)
+# ggsave(filename = "images/knsentoto.jpg", width = 23, height = 30) #  width = 22, height = 16)
 
 
 # Qualitative analyses ####
@@ -1418,14 +1429,3 @@ ggsave(filename = "images/knsentoto.jpg", width = 23, height = 30) #  width = 22
 # SZ_SUDZEIT020201123egbm0001i (Süddeutsche Zeitung, November 2020)
 # CS_CORDES0020201221egcl000eo (Corriere della Sera, December 2020)
 # SZ_SUDZEIT020210129eh1s0001x (Süddeutsche Zeitung, January 2021)
-
-
-
-
-
-
-
-
-
-
-
