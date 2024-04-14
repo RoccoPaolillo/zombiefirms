@@ -1,7 +1,7 @@
 # zombiefirms
 Code for the chapter:
 
-Hilmar, Till, Rocco Paolillo & Patrick Sachweh (forthcoming). Contagious economic failure? Discourses around “zombie firms” in Covid-19 ridden Germany and Italy, in: Michael Fuchs, Sina Fazin & Fabian Hempel (eds.), Coming to Terms with a Crisis: Cultural Engagements with Covid-19 (Bielefeld: Transcript)
+Hilmar, Till, Rocco Paolillo & Patrick Sachweh. Forthcoming. "Contagious economic failure? Discourses around “zombie firms” in Covid-19 ridden Germany and Italy." In \text{Coming to Terms with a Crisis: Cultural Engagements with Covid-19}, edited by Michael Fuchs, Sina Fazin & Fabian Hempel. Bielefeld: Transcript.
 
 Project: Corona Crisis Narratives - Framing Economic Imaginaries post-2020 (CoroNarrate) \
 Funded by the Volkswagen Foundation
