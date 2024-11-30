@@ -763,6 +763,10 @@ tx_de <- convert(corpus_de08, to = "data.frame")
 # bg_denot <- read.xls("zombiefirms.xls",sheet = "de_bgnot", encoding = "latin1")[,1]
 # bg_de <- bg_de[! bg_de %in% bg_denot]
 
+bg_de <- read_xls("zombiefirms.xls",sheet = "de_bg")[,1]
+bg_denot <- read_xls("zombiefirms.xls",sheet = "de_bgnot")[,1]
+bg_de <- bg_de$bigram[! bg_de$bigram %in% bg_denot$de_bgnot]
+
 # lemmatization of compounds
 # zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma", encoding = "latin1")[,1] # no lemmatized terms 
 # zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
@@ -1016,7 +1020,7 @@ kn_it$country <-  "Italy"
 
 # Combining keyness from the two samples
 
-kn_defig <- kn_de[c(1:20,11845:11865),]  %>% mutate(feature = reorder(feature, chi2)) %>%
+kn_defig <- kn_de[c(1:20,11865:11845),]  %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
 kn_itfig <- kn_it[c(1:20,12119:12139),]  %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
@@ -1040,7 +1044,7 @@ fcm_lf <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "le
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
-# tokens_compound(phrase(c(bg_de))) %>%
+#  tokens_compound(phrase(c(bg_de))) %>%
   tokens_remove(c(stopwords("de"),get_stopwords(language = "de"),rem_de,
                   "heute","neuen","statt")) %>%
   fcm(context = "window", window = 20, tri = FALSE)  # 20 words window unit
@@ -1060,6 +1064,7 @@ co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern =
 E(co_occur_network_lf2)$weight <- 1
 co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
 co_occur_network_lf2$ref <- paste0(unique(corpus_de08$country)," ","Left")
+co_occur_network_lf2 <- set.vertex.attribute(co_occur_network_lf2, "name", value=gsub("-|_"," ",V(co_occur_network_lf2)$name))
 
 tk_lf <- tkplot(co_occur_network_lf2) # manually modify layout
 l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
@@ -1074,9 +1079,9 @@ plot(co_occur_network_lf2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-   edge.width = (E(co_occur_network_lf2)$weight / 3),
+   edge.width = (E(co_occur_network_lf2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1105,6 +1110,7 @@ co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern =
 E(co_occur_network_rt2)$weight <- 1
 co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
 co_occur_network_rt2$ref <- paste0(unique(corpus_de08$country)," ","Right")
+co_occur_network_rt2 <- set.vertex.attribute(co_occur_network_rt2, "name", value=gsub("-|_"," ",V(co_occur_network_rt2)$name))
 
 tk_rt <- tkplot(co_occur_network_rt2) # manually modify layout
 l_rt <- tkplot.getcoords(tk_rt) # to take layout from tk_rt geo coordinate
@@ -1120,9 +1126,9 @@ plot(co_occur_network_rt2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-     edge.width = (E(co_occur_network_rt2)$weight / 3),
+     edge.width = (E(co_occur_network_rt2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1154,6 +1160,7 @@ co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern =
 E(co_occur_network_lf2)$weight <- 1
 co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
 co_occur_network_lf2$ref <- paste0(unique(corpus_it08$country)," ","Left")
+co_occur_network_lf2 <- set.vertex.attribute(co_occur_network_lf2, "name", value=gsub("-|_"," ",V(co_occur_network_lf2)$name))
 
 tk_lf <- tkplot(co_occur_network_lf2) # manually modify layout
 l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
@@ -1168,9 +1175,9 @@ plot(co_occur_network_lf2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white",
-     edge.width = (E(co_occur_network_lf2)$weight / 3),
+     edge.width = (E(co_occur_network_lf2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1200,6 +1207,7 @@ co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern =
 E(co_occur_network_rt2)$weight <- 1
 co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
 co_occur_network_rt2$ref <- paste0(unique(corpus_it08$country)," ","Right")
+co_occur_network_rt2 <- set.vertex.attribute(co_occur_network_rt2, "name", value=gsub("-|_"," ",V(co_occur_network_rt2)$name))
 
 
 tk_rt <- tkplot(co_occur_network_rt2) # manually modify layout
@@ -1215,9 +1223,9 @@ plot(co_occur_network_rt2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-     edge.width = (E(co_occur_network_rt2)$weight / 3), 
+     edge.width = (E(co_occur_network_rt2)$weight / 2.5), 
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1401,7 +1409,7 @@ dfm_it <-  tokens( corpus_it_sen,
                    remove_url = FALSE
 ) %>%
   tokens_tolower() %>% 
- # tokens_compound(phrase((bg_it))) %>%
+#  tokens_compound(phrase((bg_it))) %>%
   # tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it,
   #                 "zombie_firms","zombiefirms", "zombie",
   #                   "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
