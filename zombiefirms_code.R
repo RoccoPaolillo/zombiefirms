@@ -946,6 +946,10 @@ tx_it <- convert(corpus_it08, to = "data.frame")
 # bg_itnot <- read.xls("zombiefirms.xls",sheet = "it_bgnot", encoding = "latin1")[,1]
 # bg_it <- bg_it[! bg_it %in% bg_itnot]
 
+bg_it <- read_xls("zombiefirms.xls",sheet = "it_bg")[,1]
+bg_itnot <- read_xls("zombiefirms.xls",sheet = "it_bgnot")[,1]
+bg_it <- bg_it$bigram[! bg_it$bigram %in% bg_itnot$it_bgnot]
+
 # lemmatization of compounds
 # zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "it_lemma", encoding = "latin1")[,1] # no lemmatized terms
 # zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b") # worked to convert
@@ -1084,7 +1088,7 @@ fcm_rt <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "ri
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
 # tokens_compound(phrase(c(bg_de))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de )) %>%
+  tokens_remove(c(stopwords("de"), get_stopwords(language = "de"),rem_de )) %>%
   fcm(context = "window", window = 20, tri = FALSE)  # 20 words window unit
 
 # degree centrality (plotting undirected network), selecting top 30 words
@@ -1132,7 +1136,7 @@ fcm_lf <- tokens(corpus_subset(corpus_it08,datet >= "2020-01-01" & rating == "le
                 remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it)) %>% 
   fcm(context = "window", window = 20, tri = FALSE) # 20 words window unit
 
 # degree centrality (plotting undirected network), selecting top 30 words
@@ -1178,7 +1182,7 @@ fcm_rt <- tokens(corpus_subset(corpus_it08,datet >= "2020-01-01" & rating == "ri
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it)) %>%
   fcm(context = "window", window = 20, tri = FALSE) # 20 words window unit
 
 # degree centrality, selecting top 30 words
