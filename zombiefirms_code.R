@@ -24,6 +24,8 @@ library(readtext)
 library(tm)
 library(tm.plugin.factiva)
 library(RNewsflow)
+library(readxl)
+library(stringr)
 
 # Original data cannot be shared. We refer to the name of the originated files processed.
 # The code runs equally for the German and the Italian corpora, except where specified. Code here can report either of the countries' documents to facilitate examples.
@@ -35,7 +37,7 @@ library(RNewsflow)
 # tx_it = Italian data-frame processed data
 
 # set working directory
-setwd("")
+setwd("C:/Users/rocpa/OneDrive/Documenti/GitHub/zombiefirms/")
 
 # UTILS FOR BACKGROUND DATA PROCESSING ######
 
@@ -59,7 +61,6 @@ bigrams_filtered  <- bigrams_separate  %>%
   filter(!word2 %in% stopwords_it)
 bigrams_filtered <- bigrams_filtered  %>%  dplyr::count(word1, word2, sort = TRUE)
 bigrams_united <- bigrams_filtered  %>% unite(bigram, word1, word2, sep = " ")
-# bigrams_united  <- bigrams_united$bigram
 bigrams_united <- unique(bigrams_united)
 
 bigrams_united <- bigrams_united %>% filter(! bigram %in% zombiefirm_pattern_it)
@@ -75,7 +76,6 @@ trigrams_filtered <- trigrams_separate  %>%
   filter(!word3 %in% stopwords_de)
 trigrams_filtered  <- trigrams_filtered %>%  dplyr::count(word1, word2,word3, sort = TRUE)
 trigrams_united  <- trigrams_filtered  %>% unite(trigram, word1, word2,word3, sep = " ")
-# trigrams_united <- trigrams_united$trigram
 trigrams_united <- unique(trigrams_united)
 
 
@@ -755,29 +755,28 @@ corpus_de08 <- gsub("\\s+", " ", corpus_de08)
 # other file: corpus converted to text
 tx_de <- convert(corpus_de08, to = "data.frame")
 
-
-# bigram and variables annotation
-bg_de <- read.xls("zombiefirms.xls",sheet = "de_bg", encoding = "latin1")[,1]
-bg_denot <- read.xls("zombiefirms.xls",sheet = "de_bgnot", encoding = "latin1")[,1]
-bg_de <- bg_de[! bg_de %in% bg_denot]
+bg_de <- read_xls("zombiefirms.xls",sheet = "de_bg")[,1]
+bg_denot <- read_xls("zombiefirms.xls",sheet = "de_bgnot")[,1]
+bg_de <- bg_de$bigram[! bg_de$bigram %in% bg_denot$de_bgnot]
 
 # lemmatization of compounds
-zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma", encoding = "latin1")[,1] # no lemmatized terms 
-zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
-zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma", encoding = "latin1")[,2] # lemmatized version
-names(zombiefirm_replace_de) <- zombiefirm_pattern_de
-tx_de$text <- str_replace_all(tx_de$text, zombiefirm_replace_de )
+
+zombiefirm_pattern_de <- read_xls("zombiefirms.xls",sheet = "de_lemma")[,1] # no lemmatized terms 
+zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de$keyword_de,"\\b") # worked to convert
+zombiefirm_replace_de <- read_xls("zombiefirms.xls",sheet = "de_lemma")[,2] # lemmatized version
+names(zombiefirm_replace_de$lemma_dezmb) <- zombiefirm_pattern_de
+tx_de$text <- str_replace_all(tx_de$text, zombiefirm_replace_de$lemma_dezmb )
 
 # removal list
 
-zombiefirm_removepat <- read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,1] # no lemmatized terms to remove
-zombiefirm_removepat <- paste0("\\b",zombiefirm_removepat,"\\b") # worked to convert
-zombiefirm_removerpl <- read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,2] # lemmatized version to remove
-names(zombiefirm_removerpl) <- zombiefirm_removepat
-tx_de$text <- str_replace_all(tx_de$text, zombiefirm_removerpl )
+zombiefirm_removepat <- read_xls("zombiefirms.xls",sheet = "de_rem")[,1] # no lemmatized terms to remove
+zombiefirm_removepat <- paste0("\\b",zombiefirm_removepat$rem_de,"\\b") # worked to convert
+zombiefirm_removerpl <- read_xls("zombiefirms.xls",sheet = "de_rem")[,2] # lemmatized version to remove
+names(zombiefirm_removerpl$rem_de_replace) <- zombiefirm_removepat
+tx_de$text <- str_replace_all(tx_de$text, zombiefirm_removerpl$rem_de_replace )
 
-rem_de <-  read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,2]  # remove list
-rem_de <- unique(rem_de)
+rem_de <-  read_xls("zombiefirms.xls",sheet = "de_rem")[,2]  # remove list
+rem_de <- unique(rem_de$rem_de_replace)
 
 corpus_de08 <- corpus(tx_de)
 
@@ -790,9 +789,8 @@ dfm_de <-  tokens( corpus_de08,
                    remove_url = FALSE
 ) %>%
   tokens_tolower() %>% 
-  #  tokens_compound(phrase(c(bg_de)))  %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de") ,rem_de)) %>% # , rem_dekey)) %>% 
-  dfm()
+  tokens_remove(c(stopwords("de"),get_stopwords(language = "de") ,rem_de)) %>% # , rem_dekey)) %>% 
+    dfm()
 
 
 
@@ -923,28 +921,27 @@ corpus_it08 <- gsub("\\s+", " ", corpus_it08)
 # other file: corpus converted to text
 tx_it <- convert(corpus_it08, to = "data.frame")
 
-# bigram and variables annotation
-bg_it <- read.xls("zombiefirms.xls",sheet = "it_bg", encoding = "latin1")[,1]
-bg_itnot <- read.xls("zombiefirms.xls",sheet = "it_bgnot", encoding = "latin1")[,1]
-bg_it <- bg_it[! bg_it %in% bg_itnot]
+bg_it <- read_xls("zombiefirms.xls",sheet = "it_bg")[,1]
+bg_itnot <- read_xls("zombiefirms.xls",sheet = "it_bgnot")[,1]
+bg_it <- bg_it$bigram[! bg_it$bigram %in% bg_itnot$it_bgnot]
 
-# lemmatization of compounds
-zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "it_lemma", encoding = "latin1")[,1] # no lemmatized terms
-zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b") # worked to convert
-zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "it_lemma", encoding = "latin1")[,2] # lemmatized version
-names(zombiefirm_replace_it) <- zombiefirm_pattern_it
-tx_it$text <- str_replace_all(tx_it$text, zombiefirm_replace_it )
+zombiefirm_pattern_it <- read_xls("zombiefirms.xls",sheet = "it_lemma")[,1] # no lemmatized terms
+zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it$keyword_it,"\\b") # worked to convert
+zombiefirm_replace_it <- read_xls("zombiefirms.xls",sheet = "it_lemma")[,2] # lemmatized version
+names(zombiefirm_replace_it$lemma_itzmb) <- zombiefirm_pattern_it
+tx_it$text <- str_replace_all(tx_it$text, zombiefirm_replace_it$lemma_itzmb )
 
 # removal list
 
-zombiefirm_removepat_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,1]
-zombiefirm_removepat_it <- paste0("\\b",zombiefirm_removepat_it,"\\b")
-zombiefirm_removerpl_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,2]
-names(zombiefirm_removerpl_it) <- zombiefirm_removepat_it
-tx_it$text <- str_replace_all(tx_it$text,zombiefirm_removerpl_it)
+zombiefirm_removepat_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,1]
+zombiefirm_removepat_it <- paste0("\\b",zombiefirm_removepat_it$rem_it,"\\b")
+zombiefirm_removerpl_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,2]
+names(zombiefirm_removerpl_it$rem_it_replace) <- zombiefirm_removepat_it
+tx_it$text <- str_replace_all(tx_it$text,zombiefirm_removerpl_it$rem_it_replace)
 
-rem_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,2]
-rem_it <- unique(rem_it)
+rem_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,2]
+rem_it <- unique(rem_it$rem_it_replace)
+
 
 corpus_it08 <- corpus(tx_it)
 
@@ -957,8 +954,7 @@ dfm_it <-  tokens( corpus_it08,
                    remove_url = FALSE
 ) %>%
   tokens_tolower() %>% 
-#  tokens_compound(phrase(c(bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it)) %>% 
   dfm()
 
 
@@ -977,9 +973,9 @@ kn_it$country <-  "Italy"
 
 # Combining keyness from the two samples
 
-kn_defig <- kn_de[c(1:20,11903:11922),]  %>% mutate(feature = reorder(feature, chi2)) %>%
+kn_defig <- kn_de[c(1:20,11865:11845),]  %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
-kn_itfig <- kn_it[c(1:20,12144:12164),]  %>% mutate(feature = reorder(feature, chi2)) %>%
+kn_itfig <- kn_it[c(1:20,12119:12139),]  %>% mutate(feature = reorder(feature, chi2)) %>%
   mutate(refgrp = ifelse(chi2 < 0, "Left","Right"))
 
 rbind(kn_defig,kn_itfig) %>%
@@ -1001,8 +997,7 @@ fcm_lf <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "le
                  remove_punct = TRUE, remove_symbols = TRUE, remove_separators = TRUE,
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
-# tokens_compound(phrase(c(bg_de))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de,
+  tokens_remove(c(stopwords("de"),get_stopwords(language = "de"),rem_de,
                   "heute","neuen","statt")) %>%
   fcm(context = "window", window = 20, tri = FALSE)  # 20 words window unit
 
@@ -1021,6 +1016,7 @@ co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern =
 E(co_occur_network_lf2)$weight <- 1
 co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
 co_occur_network_lf2$ref <- paste0(unique(corpus_de08$country)," ","Left")
+co_occur_network_lf2 <- set.vertex.attribute(co_occur_network_lf2, "name", value=gsub("-|_"," ",V(co_occur_network_lf2)$name))
 
 tk_lf <- tkplot(co_occur_network_lf2) # manually modify layout
 l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
@@ -1035,9 +1031,9 @@ plot(co_occur_network_lf2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-   edge.width = (E(co_occur_network_lf2)$weight / 3),
+   edge.width = (E(co_occur_network_lf2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1049,7 +1045,7 @@ fcm_rt <- tokens(corpus_subset(corpus_de08,datet >= "2020-01-01" & rating == "ri
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
 # tokens_compound(phrase(c(bg_de))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de )) %>%
+  tokens_remove(c(stopwords("de"), get_stopwords(language = "de"),rem_de )) %>%
   fcm(context = "window", window = 20, tri = FALSE)  # 20 words window unit
 
 # degree centrality (plotting undirected network), selecting top 30 words
@@ -1066,6 +1062,7 @@ co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern =
 E(co_occur_network_rt2)$weight <- 1
 co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
 co_occur_network_rt2$ref <- paste0(unique(corpus_de08$country)," ","Right")
+co_occur_network_rt2 <- set.vertex.attribute(co_occur_network_rt2, "name", value=gsub("-|_"," ",V(co_occur_network_rt2)$name))
 
 tk_rt <- tkplot(co_occur_network_rt2) # manually modify layout
 l_rt <- tkplot.getcoords(tk_rt) # to take layout from tk_rt geo coordinate
@@ -1081,9 +1078,9 @@ plot(co_occur_network_rt2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-     edge.width = (E(co_occur_network_rt2)$weight / 3),
+     edge.width = (E(co_occur_network_rt2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1097,7 +1094,7 @@ fcm_lf <- tokens(corpus_subset(corpus_it08,datet >= "2020-01-01" & rating == "le
                 remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>% 
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it)) %>% 
   fcm(context = "window", window = 20, tri = FALSE) # 20 words window unit
 
 # degree centrality (plotting undirected network), selecting top 30 words
@@ -1115,6 +1112,7 @@ co_occur_network_lf2 <- graph_from_adjacency_matrix(fcm_select(fcm_lf, pattern =
 E(co_occur_network_lf2)$weight <- 1
 co_occur_network_lf2 <- simplify(co_occur_network_lf2, edge.attr.comb=list(weight="sum"))
 co_occur_network_lf2$ref <- paste0(unique(corpus_it08$country)," ","Left")
+co_occur_network_lf2 <- set.vertex.attribute(co_occur_network_lf2, "name", value=gsub("-|_"," ",V(co_occur_network_lf2)$name))
 
 tk_lf <- tkplot(co_occur_network_lf2) # manually modify layout
 l_lf <- tkplot.getcoords(tk_lf) # to take layout from tkplot geo coordinate 
@@ -1129,9 +1127,9 @@ plot(co_occur_network_lf2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white",
-     edge.width = (E(co_occur_network_lf2)$weight / 3),
+     edge.width = (E(co_occur_network_lf2)$weight / 2.5),
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_lf2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1143,7 +1141,7 @@ fcm_rt <- tokens(corpus_subset(corpus_it08,datet >= "2020-01-01" & rating == "ri
                  remove_numbers = TRUE,remove_url = FALSE) %>%
   tokens_tolower() %>% 
   tokens_compound(phrase(c(bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it)) %>%
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it)) %>%
   fcm(context = "window", window = 20, tri = FALSE) # 20 words window unit
 
 # degree centrality, selecting top 30 words
@@ -1161,6 +1159,7 @@ co_occur_network_rt2 <- graph_from_adjacency_matrix(fcm_select(fcm_rt, pattern =
 E(co_occur_network_rt2)$weight <- 1
 co_occur_network_rt2 <- simplify(co_occur_network_rt2, edge.attr.comb=list(weight="sum"))
 co_occur_network_rt2$ref <- paste0(unique(corpus_it08$country)," ","Right")
+co_occur_network_rt2 <- set.vertex.attribute(co_occur_network_rt2, "name", value=gsub("-|_"," ",V(co_occur_network_rt2)$name))
 
 
 tk_rt <- tkplot(co_occur_network_rt2) # manually modify layout
@@ -1176,9 +1175,9 @@ plot(co_occur_network_rt2,
      vertex.label.color = "black",
      vertex.label.cex = 2,
      vertex.color = "white", 
-     edge.width = (E(co_occur_network_rt2)$weight / 3), 
+     edge.width = (E(co_occur_network_rt2)$weight / 2.5), 
      layout=layout.circle,
-     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie_firms",2,1),
+     vertex.label.font = ifelse(V(co_occur_network_rt2)$name == "zombie firms",2,1),
      vertex.label.dist = 1.2
      
 )
@@ -1208,30 +1207,31 @@ tx_de <- convert(corpus_de08, to = "data.frame")
 
 
 # lemmatization of synonymous
-zombiefirm_pattern_de <- read.xls("zombiefirms.xls",sheet = "de_lemma", encoding = "latin1")[,1] # no lemmatized terms 
-zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de,"\\b") # worked to convert
-zombiefirm_replace_de <- read.xls("zombiefirms.xls",sheet = "de_lemma", encoding = "latin1")[,2] # lemmatized version 
-names(zombiefirm_replace_de) <- zombiefirm_pattern_de
-tx_de$text <- str_replace_all(tx_de$text, zombiefirm_replace_de )
+
+zombiefirm_pattern_de <- read_xls("zombiefirms.xls",sheet = "de_lemma")[,1] # no lemmatized terms 
+zombiefirm_pattern_de <- paste0("\\b",zombiefirm_pattern_de$keyword_de,"\\b") # worked to convert
+zombiefirm_replace_de <- read_xls("zombiefirms.xls",sheet = "de_lemma")[,2] # lemmatized version 
+names(zombiefirm_replace_de$lemma_dezmb) <- zombiefirm_pattern_de
+tx_de$text <- str_replace_all(tx_de$text, zombiefirm_replace_de$lemma_dezmb )
 
 # removal list
 
-zombiefirm_removepat <- read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,1] # no lemmatized terms to remove
-zombiefirm_removepat <- paste0("\\b",zombiefirm_removepat,"\\b") # worked to convert
-zombiefirm_removerpl <- read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,2] # lemmatized version to remove
-names(zombiefirm_removerpl) <- zombiefirm_removepat
-tx_de$text <- str_replace_all(tx_de$text, zombiefirm_removerpl )
+zombiefirm_removepat <- read_xls("zombiefirms.xls",sheet = "de_rem")[,1] # no lemmatized terms to remove
+zombiefirm_removepat <- paste0("\\b",zombiefirm_removepat$rem_de,"\\b") # worked to convert
+zombiefirm_removerpl <- read_xls("zombiefirms.xls",sheet = "de_rem")[,2] # lemmatized version to remove
+names(zombiefirm_removerpl$rem_de_replace) <- zombiefirm_removepat
+tx_de$text <- str_replace_all(tx_de$text, zombiefirm_removerpl$rem_de_replace )
 
-rem_de <-  read.xls("zombiefirms.xls",sheet = "de_rem", encoding = "latin1")[,2]  # remove list
-rem_de <- unique(rem_de)
+rem_de <-  read_xls("zombiefirms.xls",sheet = "de_rem")[,2]  # remove list
+rem_de <- unique(rem_de$rem_de_replace)
 
 
 corpus_de08 <- corpus(tx_de)
 
 
 # selecting sentence-level
- 
-zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "de_lemma")[,3]) # selecting terms
+
+zombieterms <- unique(read_xls("zombiefirms.xls",sheet = "de_lemma")[,3]) # selecting terms
 zombieterms <-  zombieterms[zombieterms != ""]
 zombieterms <- c(zombieterms,"zombie")
 zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|") 
@@ -1250,11 +1250,10 @@ dfm_de <-  tokens( corpus_de_sen,
                    remove_url = FALSE
 ) %>%
   tokens_tolower() %>% 
-# tokens_compound(phrase(c(bg_de))) %>%
-  tokens_remove(c(stopwords("de"),stopwords_de, get_stopwords(language = "de"),rem_de,
+  tokens_remove(c(stopwords("de"), get_stopwords(language = "de"),rem_de,
                   "zombie_firms","zombification","zombie_unternehmen","zombie_wirtschaft","zombie_firma", # specific to sentence level
                   "unternehmenszombies", "zombie_banken", "zombifizierung","zombie","zombiefirms"
-                  )) %>% 
+  )) %>% 
   dfm()
 
 
@@ -1277,33 +1276,27 @@ corpus_it08 <- gsub("\\s+", " ", corpus_it08)
 # other file: corpus converted to text
 tx_it <- convert(corpus_it08, to = "data.frame")
 
-# bigram and variables annotation
-# bg_it <- read.xls("zombiefirms.xls",sheet = "it_bg", encoding = "latin1")[,1]
-# bg_itnot <- read.xls("zombiefirms.xls",sheet = "it_bgnot", encoding = "latin1")[,1]
-# bg_it <- bg_it[! bg_it %in% bg_itnot]
-
-# lemmatization of compounds
-zombiefirm_pattern_it <- read.xls("zombiefirms.xls",sheet = "it_lemma", encoding = "latin1")[,1] # no lemmatized terms
-zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it,"\\b") # worked to convert
-zombiefirm_replace_it <- read.xls("zombiefirms.xls",sheet = "it_lemma", encoding = "latin1")[,2] # lemmatized version
-names(zombiefirm_replace_it) <- zombiefirm_pattern_it
-tx_it$text <- str_replace_all(tx_it$text, zombiefirm_replace_it )
+zombiefirm_pattern_it <- read_xls("zombiefirms.xls",sheet = "it_lemma")[,1] # no lemmatized terms
+zombiefirm_pattern_it <- paste0("\\b",zombiefirm_pattern_it$keyword_it,"\\b") # worked to convert
+zombiefirm_replace_it <- read_xls("zombiefirms.xls",sheet = "it_lemma")[,2] # lemmatized version
+names(zombiefirm_replace_it$lemma_itzmb) <- zombiefirm_pattern_it
+tx_it$text <- str_replace_all(tx_it$text, zombiefirm_replace_it$lemma_itzmb )
 
 # removal list
 
-zombiefirm_removepat_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,1]
-zombiefirm_removepat_it <- paste0("\\b",zombiefirm_removepat_it,"\\b")
-zombiefirm_removerpl_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,2]
-names(zombiefirm_removerpl_it) <- zombiefirm_removepat_it
-tx_it$text <- str_replace_all(tx_it$text,zombiefirm_removerpl_it)
+zombiefirm_removepat_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,1]
+zombiefirm_removepat_it <- paste0("\\b",zombiefirm_removepat_it$rem_it,"\\b")
+zombiefirm_removerpl_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,2]
+names(zombiefirm_removerpl_it$rem_it_replace) <- zombiefirm_removepat_it
+tx_it$text <- str_replace_all(tx_it$text,zombiefirm_removerpl_it$rem_it_replace)
 
-rem_it <- read.xls("zombiefirms.xls",sheet = "it_rem", encoding = "latin1")[,2]
-rem_it <- unique(rem_it)
+rem_it <- read_xls("zombiefirms.xls",sheet = "it_rem")[,2]
+rem_it <- unique(rem_it$rem_it_replace)
 
 corpus_it08 <- corpus(tx_it)
 
 # selecting sentence-level
-zombieterms <- unique(read.xls("zombiefirms.xls",sheet = "it_lemma")[,3]) # selecting terms
+zombieterms <- unique(read_xls("zombiefirms.xls",sheet = "it_lemma")[,3]) # selecting terms
 zombieterms <-  zombieterms[zombieterms != ""]
 zombieterms <- c(zombieterms,"zombie")
 zombieterms <- paste0("\\b",zombieterms,"\\b",collapse="|")
@@ -1323,11 +1316,10 @@ dfm_it <-  tokens( corpus_it_sen,
                    remove_url = FALSE
 ) %>%
   tokens_tolower() %>% 
- # tokens_compound(phrase((bg_it))) %>%
-  tokens_remove(c(stopwords("it"),stopwords_it, get_stopwords(language = "it"),rem_it,
+  tokens_remove(c(stopwords("it"), get_stopwords(language = "it"),rem_it,
                   "zombie_firms","zombiefirms", "zombie",
-                    "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
-                   "zombiefirms","zombie")) %>% 
+                  "aziende_zombie", "imprese_zombie", "zombie_company", "società_zombie", "organizzazione_zombie",
+                  "zombiefirms","zombie")) %>% 
   dfm()
 
 
